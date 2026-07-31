@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Advanced RAG Engineering – Modern Data Engineering for AI Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../L03/Day3_Lab.html" rel="next">
+<link href="../L03/01_vector_databases_and_embeddings.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-0944b910a2fba5e745fe8cb6da1db39f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-ab6ae2130d4336415d9ad8fde3bc8297.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-0944b910a2fba5e745fe8cb6da1db39f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<meta name="mermaid-theme" content="default">
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Modern Data Engineering for AI Systems</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../index.html" aria-current="page"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://github.com/MohammadYusif/modern-data-engineering-ai"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text">Source</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../L03/00_intro.html">Day 3 — Vector Databases and Advanced RAG Engineering</a></li><li class="breadcrumb-item"><a href="../L03/02_advanced_rag_engineering.html">Advanced RAG Engineering</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Modern Data Engineering for AI Systems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">Day 1 — Modern Data Architectures</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L01/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 1 — Foundations of Data Engineering for AI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L01/01_lakehouse_architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Warehouses, Lakes, and Lakehouses</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L01/Day1_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lab: Mini-Lakehouse with Delta Lake</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">Day 2 — Real-Time Data Pipelines</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L02/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 2 — Real-Time Data Pipelines</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L02/01_streaming_and_event_driven_architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Streaming and Event-Driven Architectures</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L02/02_building_real_time_pipelines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Building Real-Time Pipelines</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L02/Day2_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lab: Real-Time Streaming Pipeline with Kafka &amp; Delta Lake</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Day 3 — Vector Databases and Advanced RAG Engineering</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 3 — Vector Databases and Advanced RAG Engineering</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/01_vector_databases_and_embeddings.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Vector Databases and Embeddings</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/02_advanced_rag_engineering.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Advanced RAG Engineering</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/Day3_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lab: Vector Databases and Advanced RAG Engineering</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/Day3_Exercise.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Exercise: Build a RAG Pipeline from Scratch</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">Day 4 — Data Quality, Governance, and Lineage</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 4 — Data Quality, Governance, and Lineage</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/01_data_quality_principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Quality: Principles, Validation, and Contracts</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/02_governance_frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Automated Governance and Enterprise Policy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/03_lineage_and_observability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lineage and Data Observability</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/Day4_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lab: Data Quality Gates, Great Expectations, and OpenLineage on Real Retail Data</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">Day 5 — Architecture Integration and Final Project</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L05/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 5 — Architecture Integration and Final Project</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L05/01_unified_architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Unified Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L05/02_final_project.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Final Project</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L05/Day5_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Final Project: Architecture Integration Capstone</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#why-rag-exists" id="toc-why-rag-exists" class="nav-link active" data-scroll-target="#why-rag-exists">Why RAG exists</a></li>
+  <li><a href="#the-complete-rag-architecture" id="toc-the-complete-rag-architecture" class="nav-link" data-scroll-target="#the-complete-rag-architecture">The complete RAG architecture</a>
+  <ul class="collapse">
+  <li><a href="#phase-one-indexing-preparation" id="toc-phase-one-indexing-preparation" class="nav-link" data-scroll-target="#phase-one-indexing-preparation">Phase one: indexing (preparation)</a></li>
+  <li><a href="#phase-two-querying-inference" id="toc-phase-two-querying-inference" class="nav-link" data-scroll-target="#phase-two-querying-inference">Phase two: querying (inference)</a></li>
+  </ul></li>
+  <li><a href="#three-rag-architecture-patterns" id="toc-three-rag-architecture-patterns" class="nav-link" data-scroll-target="#three-rag-architecture-patterns">Three RAG architecture patterns</a></li>
+  <li><a href="#walking-through-a-real-query" id="toc-walking-through-a-real-query" class="nav-link" data-scroll-target="#walking-through-a-real-query">Walking through a real query</a>
+  <ul class="collapse">
+  <li><a href="#where-basic-rag-breaks" id="toc-where-basic-rag-breaks" class="nav-link" data-scroll-target="#where-basic-rag-breaks">Where basic RAG breaks</a></li>
+  </ul></li>
+  <li><a href="#chunking-strategies" id="toc-chunking-strategies" class="nav-link" data-scroll-target="#chunking-strategies">Chunking strategies</a>
+  <ul class="collapse">
+  <li><a href="#chunk-overlap" id="toc-chunk-overlap" class="nav-link" data-scroll-target="#chunk-overlap">Chunk overlap</a></li>
+  </ul></li>
+  <li><a href="#hybrid-search-and-reciprocal-rank-fusion" id="toc-hybrid-search-and-reciprocal-rank-fusion" class="nav-link" data-scroll-target="#hybrid-search-and-reciprocal-rank-fusion">Hybrid search and Reciprocal Rank Fusion</a></li>
+  <li><a href="#cross-encoder-reranking-the-second-precision-gate" id="toc-cross-encoder-reranking-the-second-precision-gate" class="nav-link" data-scroll-target="#cross-encoder-reranking-the-second-precision-gate">Cross-encoder reranking — the second precision gate</a></li>
+  <li><a href="#rag-evaluation-the-triad-you-must-measure" id="toc-rag-evaluation-the-triad-you-must-measure" class="nav-link" data-scroll-target="#rag-evaluation-the-triad-you-must-measure">RAG evaluation — the triad you must measure</a></li>
+  <li><a href="#building-production-ready-rag-pipelines" id="toc-building-production-ready-rag-pipelines" class="nav-link" data-scroll-target="#building-production-ready-rag-pipelines">Building production-ready RAG pipelines</a></li>
+  <li><a href="#lab-building-an-advanced-rag-system" id="toc-lab-building-an-advanced-rag-system" class="nav-link" data-scroll-target="#lab-building-an-advanced-rag-system">Lab: building an advanced RAG system</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../L03/00_intro.html">Day 3 — Vector Databases and Advanced RAG Engineering</a></li><li class="breadcrumb-item"><a href="../L03/02_advanced_rag_engineering.html">Advanced RAG Engineering</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Advanced RAG Engineering</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="why-rag-exists" class="level2">
+<h2 class="anchored" data-anchor-id="why-rag-exists">Why RAG exists</h2>
+<p>Ask a large language model something like “What were the key discussion points in our company’s board meeting yesterday?” and it will do one of three things: hallucinate a confident but false answer, admit it doesn’t know (because its training data has a cutoff date), or give a generic non-answer (“board meetings typically discuss strategy and finances…”). None of those are useful, and all three come from the same root causes: the model’s knowledge is <strong>static</strong> (frozen at training time), it has <strong>no memory of your private data</strong> (it never saw your internal documents), and it is <strong>prone to hallucination</strong> (when unsure, it guesses plausibly instead of admitting ignorance).</p>
+<p><strong>Retrieval-Augmented Generation (RAG)</strong> retrieves relevant documents from an external knowledge source — usually a vector database — and injects them into the LLM’s prompt, so the model generates an answer grounded in real, retrieved data rather than in memory alone. It’s the difference between an open-book and a closed-book exam: without RAG, the model answers purely from memory and may hallucinate; with RAG, it looks the answer up first, then answers from what it found. Embeddings and similarity search — covered in <a href="../L03/01_vector_databases_and_embeddings.html">Vector Databases and Embeddings</a> — are the fuel and the engine; RAG is the complete vehicle built around them.</p>
+<p>Every RAG pipeline runs in three phases: <strong>retrieve</strong> relevant documents using similarity search, <strong>augment</strong> the prompt with those documents, and <strong>generate</strong> an answer grounded in that context.</p>
+</section>
+<section id="the-complete-rag-architecture" class="level2">
+<h2 class="anchored" data-anchor-id="the-complete-rag-architecture">The complete RAG architecture</h2>
+<p>The full pipeline splits into two steps that run at very different times: <strong>indexing</strong>, done once offline, and <strong>querying</strong>, done every time a user asks something.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TD
+    A["Documents&lt;br&gt;(PDFs, wikis, emails, code)"] --&gt; B["Chunking&lt;br&gt;(split into passages)"]
+    B --&gt; C["Embedding&lt;br&gt;(chunk → vector)"]
+    C --&gt; D[("Vector DB&lt;br&gt;(chunk + vector + metadata)")]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<section id="phase-one-indexing-preparation" class="level3">
+<h3 class="anchored" data-anchor-id="phase-one-indexing-preparation">Phase one: indexing (preparation)</h3>
+<p>This is the offline step — building the “textbook” the system will later search:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Step</th>
+<th>Action</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1. Load</td>
+<td>Collect all source documents</td>
+<td>Company policies, product manuals, support tickets</td>
+</tr>
+<tr class="even">
+<td>2. Chunk</td>
+<td>Split into semantic units</td>
+<td>Each chunk = 512 tokens with 50-token overlap</td>
+</tr>
+<tr class="odd">
+<td>3. Embed</td>
+<td>Generate a vector for each chunk</td>
+<td><code>chunk_vector = embedding_model(chunk_text)</code></td>
+</tr>
+<tr class="even">
+<td>4. Store</td>
+<td>Save chunk + vector + metadata</td>
+<td><code>{id: 123, text: "...", vector: [0.1, 0.9, ...], source: "HR_policy.pdf"}</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="phase-two-querying-inference" class="level3">
+<h3 class="anchored" data-anchor-id="phase-two-querying-inference">Phase two: querying (inference)</h3>
+<p>This runs on every user question. For the query “What is our vacation policy?”: embed the query, run similarity search against the vector database to get the top-<em>k</em> nearest chunks (e.g., <code>k=5</code>), retrieve the actual text of those chunks, build a prompt containing system instructions plus the retrieved chunks plus the user’s question, send it to the LLM, and return the generated answer — e.g., “Our vacation policy provides 15 days per year…”</p>
+</section>
+</section>
+<section id="three-rag-architecture-patterns" class="level2">
+<h2 class="anchored" data-anchor-id="three-rag-architecture-patterns">Three RAG architecture patterns</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Pattern</th>
+<th>Flow</th>
+<th>Pros</th>
+<th>Cons</th>
+<th>Use case</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1. Naive RAG</td>
+<td>Query → Retrieve → Augment → Generate → Answer</td>
+<td>Easy to build, works for simple Q&amp;A</td>
+<td>No quality checks; retrieves wrong chunks often</td>
+<td>Prototypes, internal demos</td>
+</tr>
+<tr class="even">
+<td>2. Advanced RAG</td>
+<td>Query → rewrite → Retrieve → Rerank → Filter → Augment → Generate</td>
+<td>Much higher accuracy</td>
+<td>More latency, more components to maintain</td>
+<td>Production systems</td>
+</tr>
+<tr class="odd">
+<td>3. Modular / Agentic RAG</td>
+<td>System decides which retriever to call (vector DB, web search, SQL, API); can retrieve iteratively</td>
+<td>Most powerful — answers complex multi-hop questions</td>
+<td>Complex to build and debug</td>
+<td>Multi-hop, tool-using assistants</td>
+</tr>
+</tbody>
+</table>
+<p>Advanced RAG adds two things around the naive loop: <strong>pre-retrieval</strong> processing (rewriting an ambiguous query, expanding it with synonyms) and <strong>post-retrieval</strong> processing (reranking chunks with a more expensive cross-encoder, filtering out low-quality ones). Modular/agentic RAG goes further still — the system can ask a follow-up question, retrieve again, and chain retrievals together, which is the only way to answer something like “What is the capital of the country where Einstein was born?” (a single retrieval can’t connect those two facts).</p>
+</section>
+<section id="walking-through-a-real-query" class="level2">
+<h2 class="anchored" data-anchor-id="walking-through-a-real-query">Walking through a real query</h2>
+<p>User asks: <em>“How many vacation days do new hires get?”</em></p>
+<ol type="1">
+<li><strong>Embed the query</strong> → <code>[0.23, -0.56, 0.78, ...]</code></li>
+<li><strong>Similarity search</strong> returns the top 3 chunks: Chunk A (score 0.92, “New hires in their first year receive 10 vacation days”), Chunk B (score 0.88, “Employees with 1–5 years of service receive 15 days”), Chunk C (score 0.45, “Vacation policy was revised in January 2024”).</li>
+<li><strong>Reranking</strong> (optional): a cross-encoder re-evaluates all three and promotes Chunk A to rank 1, dropping Chunk C entirely as irrelevant noise.</li>
+<li><strong>Build the prompt</strong>: <code>Context: New hires in their first year receive 10 vacation days. Question: How many vacation days do new hires get? Answer:</code></li>
+<li><strong>LLM generation</strong>: “New hires receive 10 vacation days during their first year of employment.”</li>
+<li><strong>Return to user.</strong></li>
+</ol>
+<p>Notice what happened: the LLM did not “know” this fact. It read it from the retrieved chunk and paraphrased it — that’s the entire point of RAG.</p>
+<section id="where-basic-rag-breaks" class="level3">
+<h3 class="anchored" data-anchor-id="where-basic-rag-breaks">Where basic RAG breaks</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Problem</th>
+<th>Explanation</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Low recall</td>
+<td>Relevant chunks not retrieved</td>
+<td>Improve chunking, embedding model, or increase <em>k</em></td>
+</tr>
+<tr class="even">
+<td>Low precision</td>
+<td>Irrelevant chunks retrieved</td>
+<td>Add reranking, metadata filtering</td>
+</tr>
+<tr class="odd">
+<td>Context window overflow</td>
+<td>Retrieved too much text</td>
+<td>Compress chunks, use a smaller <em>k</em></td>
+</tr>
+<tr class="even">
+<td>Outdated data</td>
+<td>Vector DB hasn’t been updated</td>
+<td>Implement incremental indexing</td>
+</tr>
+<tr class="odd">
+<td>Multi-hop questions</td>
+<td>Single retrieval can’t connect separate facts</td>
+<td>Use iterative or agentic RAG</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="chunking-strategies" class="level2">
+<h2 class="anchored" data-anchor-id="chunking-strategies">Chunking strategies</h2>
+<p>Imagine splitting a 10-page medical paper into rigid 100-character chunks. One chunk ends with “The patient showed no signs of” and the next begins with “improvement after treatment.” A user asks “Did the patient improve?” and the system retrieves one chunk with no answer, or the other with missing context — either way, a wrong answer. <strong>Chunking is the art of breaking documents into pieces that are meaningful, self-contained, and searchable.</strong></p>
+<p>Good chunking has three goals: <strong>semantic completeness</strong> (each chunk should make sense on its own — cutting a sentence in half fails this), <strong>appropriate size</strong> (small enough for efficient retrieval, large enough to hold context — 50-character chunks lose meaning, 5000-character chunks waste the context window), and <strong>contextual boundaries</strong> (respect the document’s natural structure — never split inside a table, code block, or list). The golden rule: a chunk should be a unit of meaning — a paragraph, a function — not an arbitrary slice of bytes.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Strategy</th>
+<th>How it works</th>
+<th>Best for</th>
+<th>Avoid for</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Fixed-size</td>
+<td>Splits every <em>N</em> characters/tokens, regardless of content</td>
+<td>Logs, uniform text, unknown structure</td>
+<td>Any structured document — it breaks sentences and ideas</td>
+</tr>
+<tr class="even">
+<td>Sentence-based</td>
+<td>Splits on punctuation boundaries</td>
+<td>Conversational text, support tickets</td>
+<td>Very long or complex sentences; abbreviations like “Dr.&nbsp;Smith” can fool it</td>
+</tr>
+<tr class="odd">
+<td>Recursive / hierarchical</td>
+<td>Recursively splits by decreasing boundary — document → section → paragraph → sentence — stopping once a chunk is within the target size</td>
+<td>Books, manuals, legal documents with clear headings</td>
+<td>Flat, unstructured text with no real hierarchy</td>
+</tr>
+<tr class="even">
+<td>Semantic</td>
+<td>Embeds sliding windows of sentences; splits where similarity between adjacent windows drops sharply</td>
+<td>Large, mixed-content documents — textbooks, research papers</td>
+<td>Small or simple documents — computationally overkill</td>
+</tr>
+</tbody>
+</table>
+<p>Recursive chunking keeps a paragraph attached to its section, and a sentence to its paragraph, so the system can store parent-child relationships — but it requires actually parsing the document’s headings. Semantic chunking is the most content-aware of the four: it detects where meaning shifts by comparing the embeddings of consecutive sentence windows, splitting only where similarity drops — at the cost of running an embedding model during indexing, not just at query time.</p>
+<section id="chunk-overlap" class="level3">
+<h3 class="anchored" data-anchor-id="chunk-overlap">Chunk overlap</h3>
+<p>Regardless of strategy, chunks should almost always overlap — chunk 2 repeats the last few tokens of chunk 1:</p>
+<pre><code>Chunk 1: [A B C D E F G]
+Chunk 2: [F G H I J K L]   ← overlaps by 2 tokens (F, G)
+Chunk 3: [K L M N O P Q]   ← overlaps by 2 tokens (K, L)</code></pre>
+<p>Without overlap, “The patient showed no” ends one chunk and “signs of improvement” starts the next, and the LLM never sees the complete sentence. With overlap, both chunks contain the boundary. Recommended overlap is 10–20% of chunk size: 512-token chunks get 50–100 tokens of overlap; 256-token chunks get 25–50.</p>
+</section>
+</section>
+<section id="hybrid-search-and-reciprocal-rank-fusion" class="level2">
+<h2 class="anchored" data-anchor-id="hybrid-search-and-reciprocal-rank-fusion">Hybrid search and Reciprocal Rank Fusion</h2>
+<p>Pure vector search misses exact keyword matches — a query for “GPT-4” can retrieve documents about “a language model” instead of the literal string. Pure BM25 (keyword search) misses semantic meaning entirely — “canine therapy” doesn’t match “dog treatment” at all if no words overlap.</p>
+<p><strong>Hybrid search</strong> runs both a vector ANN search and a BM25 keyword search in parallel, then merges the two result lists with <strong>Reciprocal Rank Fusion (RRF)</strong>:</p>
+<p><span class="math display">\[\text{RRF score} = \sum_{\text{list}} \frac{1}{k + \text{rank}_i}, \quad k = 60\]</span></p>
+<p>RRF rewards a document that ranks highly in <em>both</em> lists, without needing any weights tuned by hand — and empirically it outperforms a weighted linear combination of the two scores in most benchmarks. Most modern vector databases (Weaviate, Elasticsearch, Qdrant) expose hybrid search natively.</p>
+</section>
+<section id="cross-encoder-reranking-the-second-precision-gate" class="level2">
+<h2 class="anchored" data-anchor-id="cross-encoder-reranking-the-second-precision-gate">Cross-encoder reranking — the second precision gate</h2>
+<p>A <strong>bi-encoder</strong> (the retrieval stage) embeds the query and each document independently — fast, but it can miss subtle relevance because query and document never actually interact during scoring. A <strong>cross-encoder</strong> (reranking stage) takes the <code>(query, document)</code> pair <em>jointly</em> and scores them together — far more accurate, because it can model the interaction between query tokens and document tokens directly, at the cost of one inference call per candidate (O(n), versus O(1) for bi-encoder similarity).</p>
+<p>The standard workflow: retrieve the top 50 candidates cheaply with the bi-encoder, rerank those 50 with the cross-encoder, then pass only the top 3 to 5 to the LLM. Rerank only when retrieval returns more than ~10 candidates — it adds roughly 50–200ms of latency per query. Common models: <code>ms-marco-MiniLM-L-6-v2</code> (fast), <code>bge-reranker-large</code> (more accurate), or a hosted option like the Cohere Rerank API.</p>
+</section>
+<section id="rag-evaluation-the-triad-you-must-measure" class="level2">
+<h2 class="anchored" data-anchor-id="rag-evaluation-the-triad-you-must-measure">RAG evaluation — the triad you must measure</h2>
+<p>You cannot guess whether an architecture change improved retrieval — you have to measure it:</p>
+<ul>
+<li><strong>Context Precision</strong> — are the retrieved chunks actually relevant? (no noise)</li>
+<li><strong>Context Recall</strong> — did retrieval find <em>all</em> the chunks needed to answer? (completeness)</li>
+<li><strong>Answer Faithfulness</strong> — does the generated answer stick to the retrieved context, or does it add facts that weren’t there? (hallucination risk)</li>
+<li><strong>Answer Relevance</strong> — does the answer actually address what the user asked?</li>
+</ul>
+<p><strong>RAGAS</strong> is the standard open-source framework: it computes all four metrics automatically using an LLM as judge. A useful alert rule: if faithfulness drops below 0.85, the retrieval or the prompt has regressed and needs attention.</p>
+</section>
+<section id="building-production-ready-rag-pipelines" class="level2">
+<h2 class="anchored" data-anchor-id="building-production-ready-rag-pipelines">Building production-ready RAG pipelines</h2>
+<p>Turning a working prototype into something stable and accurate at scale means implementing five layers:</p>
+<pre><code>[Ingestion Layer] → [Hybrid Retrieval] → [Two-Stage Reranking] → [Data Sync / CDC] → [Evaluation Triad]</code></pre>
+<ol type="1">
+<li><p><strong>The ingestion layer.</strong> Production data is rarely clean markdown — it’s multi-column PDFs, scanned documents, and messy financial tables. Modern pipelines use vision-based layout parsers (Docling, Unstructured) to convert these into clean semantic trees that preserve table structure. Every chunk should also be stamped with metadata — <code>file_id</code>, <code>security_clearance_level</code>, <code>creation_date</code>, <code>document_version</code> — you can’t just inject raw text.</p></li>
+<li><p><strong>Hybrid retrieval.</strong> Relying only on vector search is a classic prototype mistake — it struggles with exact product serial numbers, code symbols, or jargon. Combine dense (vector) retrieval with sparse (BM25) retrieval via RRF, as covered above.</p></li>
+<li><p><strong>Two-stage reranking</strong>, to mitigate “lost-in-the-middle”: dumping the top 30 raw chunks into an LLM overwhelms it and it starts ignoring information buried in the middle of the prompt. Stage one fetches the top 50 candidates cheaply; stage two reranks with a cross-encoder and keeps only the best 3–5.</p></li>
+<li><p><strong>Keeping data fresh — incremental sync and CDC.</strong> A production knowledge base isn’t static; a nightly full wipe-and-reindex doesn’t scale.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Sync strategy</th>
+<th>How it works</th>
+<th>When to use it</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Incremental updates</td>
+<td>Monitors folder timestamps or commit histories, re-indexes only new/modified documents</td>
+<td>Standard corporate files and wikis</td>
+</tr>
+<tr class="even">
+<td>Change Data Capture (CDC)</td>
+<td>Hooks directly into a live database to mirror inserts/updates/deletes into the vector store instantly</td>
+<td>Highly dynamic data — live inventory, ticketing</td>
+</tr>
+</tbody>
+</table></li>
+<li><p><strong>Continuous evaluation.</strong> Score every architectural change against the RAG triad (context relevance, groundedness, answer relevance) — you cannot tell whether a change helped without measuring it.</p></li>
+</ol>
+</section>
+<section id="lab-building-an-advanced-rag-system" class="level2">
+<h2 class="anchored" data-anchor-id="lab-building-an-advanced-rag-system">Lab: building an advanced RAG system</h2>
+<p>The <a href="../L03/Day3_Lab.html">Day 3 lab notebook</a> implements this entire pipeline end to end over a small built-in knowledge base of data-engineering documents (Kafka, Delta Lake, RAG, HNSW, hybrid search): document chunking, a ChromaDB vector index (HNSW backend), BM25 keyword search, RRF hybrid fusion, cross-encoder reranking, RAG prompt construction, and RAGAS-style precision and similarity evaluation — all on a real, executed run using local, free components (no hosted vector DB, no paid embeddings API, no GPU).</p>
+<p>What to look for in the output:</p>
+<ul>
+<li>Candidate counts moving through each stage — vector search, BM25 search, RRF fusion — for four different queries against the same eight-document knowledge base.</li>
+<li>The cross-encoder reranking step narrowing the fused candidates down to the top 3, with each surviving chunk’s text printed.</li>
+<li>The final RAG prompt assembled from the top reranked chunks, plus the retrieval metrics (<code>context_precision</code>, <code>avg_similarity</code>) and a pass/fail quality read-out, printed for every query.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The <a href="../L03/Day3_Exercise.html">practice exercise</a> covers the same six stages as the lab, but its task cells contain deliberate <code>???</code> placeholders for students to fill in — it will <strong>not</strong> run as delivered, and that is intentional, not a bug. It’s kept as a separate notebook from the worked lab rather than merged into it, since merging would either break the lab’s run-as-delivered state or defeat the exercise’s purpose. Complete the <code>???</code> blanks yourself, then run it top to bottom to check your work against the inline test-cell assertions.</p>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/mohammadyusif\.github\.io\/modern-data-engineering-ai\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../L03/01_vector_databases_and_embeddings.html" class="pagination-link" aria-label="Vector Databases and Embeddings">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Vector Databases and Embeddings</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../L03/Day3_Lab.html" class="pagination-link" aria-label="Lab: Vector Databases and Advanced RAG Engineering">
+        <span class="nav-page-text">Lab: Vector Databases and Advanced RAG Engineering</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Modern Data Engineering for AI Systems — SDAIA Academy capstone course</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/MohammadYusif/modern-data-engineering-ai">
+<p>Source</p>
+</a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

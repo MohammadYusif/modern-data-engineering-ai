@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Exercise: Build a RAG Pipeline from Scratch – Modern Data Engineering for AI Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../L04/00_intro.html" rel="next">
+<link href="../L03/Day3_Lab.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-0944b910a2fba5e745fe8cb6da1db39f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-ab6ae2130d4336415d9ad8fde3bc8297.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-0944b910a2fba5e745fe8cb6da1db39f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Modern Data Engineering for AI Systems</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../index.html" aria-current="page"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://github.com/MohammadYusif/modern-data-engineering-ai"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text">Source</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../L03/00_intro.html">Day 3 — Vector Databases and Advanced RAG Engineering</a></li><li class="breadcrumb-item"><a href="../L03/Day3_Exercise.html">Exercise: Build a RAG Pipeline from Scratch</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Modern Data Engineering for AI Systems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">Day 1 — Modern Data Architectures</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L01/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 1 — Foundations of Data Engineering for AI</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L01/01_lakehouse_architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Warehouses, Lakes, and Lakehouses</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L01/Day1_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lab: Mini-Lakehouse with Delta Lake</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">Day 2 — Real-Time Data Pipelines</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L02/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 2 — Real-Time Data Pipelines</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L02/01_streaming_and_event_driven_architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Streaming and Event-Driven Architectures</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L02/02_building_real_time_pipelines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Building Real-Time Pipelines</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L02/Day2_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lab: Real-Time Streaming Pipeline with Kafka &amp; Delta Lake</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Day 3 — Vector Databases and Advanced RAG Engineering</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 3 — Vector Databases and Advanced RAG Engineering</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/01_vector_databases_and_embeddings.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Vector Databases and Embeddings</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/02_advanced_rag_engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Advanced RAG Engineering</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/Day3_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lab: Vector Databases and Advanced RAG Engineering</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L03/Day3_Exercise.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Exercise: Build a RAG Pipeline from Scratch</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">Day 4 — Data Quality, Governance, and Lineage</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 4 — Data Quality, Governance, and Lineage</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/01_data_quality_principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Quality: Principles, Validation, and Contracts</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/02_governance_frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Automated Governance and Enterprise Policy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/03_lineage_and_observability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lineage and Data Observability</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L04/Day4_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Lab: Data Quality Gates, Great Expectations, and OpenLineage on Real Retail Data</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">Day 5 — Architecture Integration and Final Project</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L05/00_intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Day 5 — Architecture Integration and Final Project</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L05/01_unified_architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Unified Architecture</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L05/02_final_project.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Final Project</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../L05/Day5_Lab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Final Project: Architecture Integration Capstone</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#day-3-lab-exercise-build-a-rag-pipeline-from-scratch" id="toc-day-3-lab-exercise-build-a-rag-pipeline-from-scratch" class="nav-link active" data-scroll-target="#day-3-lab-exercise-build-a-rag-pipeline-from-scratch">Day 3 Lab Exercise — Build a RAG Pipeline from Scratch</a>
+  <ul class="collapse">
+  <li><a href="#scenario" id="toc-scenario" class="nav-link" data-scroll-target="#scenario">Scenario</a></li>
+  <li><a href="#pipeline-you-will-build" id="toc-pipeline-you-will-build" class="nav-link" data-scroll-target="#pipeline-you-will-build">Pipeline you will build</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
+  <li><a href="#knowledge-base" id="toc-knowledge-base" class="nav-link" data-scroll-target="#knowledge-base">Knowledge Base</a></li>
+  <li><a href="#task-1-document-chunking-10-min" id="toc-task-1-document-chunking-10-min" class="nav-link" data-scroll-target="#task-1-document-chunking-10-min">Task 1 — Document Chunking (10 min)</a></li>
+  <li><a href="#task-2-build-the-vector-index-10-min" id="toc-task-2-build-the-vector-index-10-min" class="nav-link" data-scroll-target="#task-2-build-the-vector-index-10-min">Task 2 — Build the Vector Index (10 min)</a></li>
+  <li><a href="#task-3-bm25-keyword-search-10-min" id="toc-task-3-bm25-keyword-search-10-min" class="nav-link" data-scroll-target="#task-3-bm25-keyword-search-10-min">Task 3 — BM25 Keyword Search (10 min)</a></li>
+  <li><a href="#task-4-hybrid-search-with-reciprocal-rank-fusion-10-min" id="toc-task-4-hybrid-search-with-reciprocal-rank-fusion-10-min" class="nav-link" data-scroll-target="#task-4-hybrid-search-with-reciprocal-rank-fusion-10-min">Task 4 — Hybrid Search with Reciprocal Rank Fusion (10 min)</a></li>
+  <li><a href="#task-5-cross-encoder-reranking-10-min" id="toc-task-5-cross-encoder-reranking-10-min" class="nav-link" data-scroll-target="#task-5-cross-encoder-reranking-10-min">Task 5 — Cross-Encoder Reranking (10 min)</a></li>
+  <li><a href="#task-6-evaluation-full-pipeline-10-min" id="toc-task-6-evaluation-full-pipeline-10-min" class="nav-link" data-scroll-target="#task-6-evaluation-full-pipeline-10-min">Task 6 — Evaluation + Full Pipeline (10 min)</a></li>
+  <li><a href="#bonus-challenge-if-you-finish-early" id="toc-bonus-challenge-if-you-finish-early" class="nav-link" data-scroll-target="#bonus-challenge-if-you-finish-early">Bonus Challenge (if you finish early)</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../L03/00_intro.html">Day 3 — Vector Databases and Advanced RAG Engineering</a></li><li class="breadcrumb-item"><a href="../L03/Day3_Exercise.html">Exercise: Build a RAG Pipeline from Scratch</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Exercise: Build a RAG Pipeline from Scratch</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="day-3-lab-exercise-build-a-rag-pipeline-from-scratch" class="level1">
+<h1>Day 3 Lab Exercise — Build a RAG Pipeline from Scratch</h1>
+<p><strong>Estimated time: 60 minutes</strong></p>
+<section id="scenario" class="level2">
+<h2 class="anchored" data-anchor-id="scenario">Scenario</h2>
+<p>You are building a <strong>Data Engineering Q&amp;A Assistant</strong> for the SDAIA bootcamp. Students can ask it questions and it will retrieve the most relevant content from the course knowledge base and generate a grounded answer.</p>
+<p>Your job is to implement each stage of the pipeline. Six tasks, each building on the previous one.</p>
+</section>
+<section id="pipeline-you-will-build" class="level2">
+<h2 class="anchored" data-anchor-id="pipeline-you-will-build">Pipeline you will build</h2>
+<pre><code>Documents → Chunking → ChromaDB Vector Index ─┐
+                     → BM25 Keyword Index    ─┴─► RRF Fusion → Reranking → RAG Prompt → Evaluation</code></pre>
+<p><strong>Do not modify cells marked <code># ── PROVIDED ──</code>.</strong> Fill in every <code># TODO</code> comment. Run the test cell after each task to verify.</p>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<div id="cell-3" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install chromadb sentence<span class="op">-</span>transformers rank<span class="op">-</span>bm25 numpy</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="cell-4" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── PROVIDED ── imports (do not modify)import reimport numpy as npimport chromadbfrom chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunctionfrom sentence_transformers import SentenceTransformer, CrossEncoderfrom rank_bm25 import BM25Okapiprint("✅ All libraries imported successfully.")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="knowledge-base" class="level2">
+<h2 class="anchored" data-anchor-id="knowledge-base">Knowledge Base</h2>
+<p>These are the documents your RAG system will index. Do not modify them.</p>
+<div id="cell-6" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── PROVIDED ── knowledge base (do not modify)DOCUMENTS = [    {"id": "d01", "text": "Apache Kafka stores messages in topics. Each topic is split into partitions — ordered, append-only logs. Every message inside a partition gets an offset, which is its permanent address. A consumer group shares partitions so that each partition is assigned to exactly one member at a time."},    {"id": "d02", "text": "A tumbling window is a fixed-size, non-overlapping time bucket. Every event belongs to exactly one tumbling window. A sliding window overlaps — the same event can appear in multiple windows. A session window closes after a configurable gap of inactivity, so its size varies per user."},    {"id": "d03", "text": "A watermark is a threshold that tells the stream processor how long to wait for late-arriving events before closing a window. Events arriving after the watermark has passed are dropped or sent to a dead-letter queue. A larger watermark increases completeness but raises end-to-end latency."},    {"id": "d04", "text": "Exactly-once delivery requires coordination between the producer, broker, and consumer. At-most-once loses data on failure. At-least-once retries on failure but may produce duplicates. Exactly-once prevents both, at a cost of roughly 20 percent throughput overhead."},    {"id": "d05", "text": "Delta Lake stores data in Parquet files and records every write operation in a transaction log called the delta_log. Each entry in the log is a JSON commit file. Readers replay the log from version zero to reconstruct the current table state, which is how Delta provides ACID guarantees without a traditional database engine."},    {"id": "d06", "text": "MERGE INTO allows you to apply inserts, updates, and deletes atomically in a single operation. It is the correct way to implement CDC (Change Data Capture) into a Delta table. Delta executes MERGE by scanning only the affected Parquet files and writing new ones, never modifying existing files in place."},    {"id": "d07", "text": "HNSW stands for Hierarchical Navigable Small World. It is a graph-based approximate nearest-neighbour index used inside ChromaDB, Pinecone, and Weaviate. The M parameter controls how many bidirectional links each node has. The ef parameter at query time controls how large the candidate list is during search, trading recall for latency."},    {"id": "d08", "text": "Hybrid search runs vector semantic search and BM25 keyword search in parallel, then merges the two result lists. Vector search finds semantically similar documents even when exact words differ. BM25 finds documents that share exact terms with the query. Hybrid search outperforms either method alone on most benchmarks."},    {"id": "d09", "text": "Reciprocal Rank Fusion scores a document as the sum of 1 divided by k plus its rank across all result lists, where k equals 60 by convention. This formula rewards documents that rank consistently high in both the vector list and the BM25 list, without requiring any weights to be tuned manually."},    {"id": "d10", "text": "A cross-encoder takes a query and a document as a pair and scores them jointly. This is more accurate than comparing independent embeddings because the model can see the interaction between query tokens and document tokens. The standard two-stage pattern is: retrieve the top 50 candidates with a bi-encoder, then rerank them with a cross-encoder, then pass the top 3 to the LLM."},    {"id": "d11", "text": "RAG evaluation measures four properties. Context precision is the fraction of retrieved chunks that are actually relevant. Context recall measures whether all needed chunks were retrieved. Answer faithfulness checks whether the generated answer stays within the retrieved context. Answer relevance checks whether the answer addresses the user question."},    {"id": "d12", "text": "A data contract is a machine-enforceable agreement between a data producer and its consumers. It specifies the schema, field types, and SLA. Pydantic v2 enforces contracts in Python using strict type checking. Breaking changes such as removing a column or narrowing a type require a major version bump and a migration window for downstream consumers."},]print(f"✅ Knowledge base loaded — {len(DOCUMENTS)} documents ready.")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="task-1-document-chunking-10-min" class="level2">
+<h2 class="anchored" data-anchor-id="task-1-document-chunking-10-min">Task 1 — Document Chunking (10 min)</h2>
+<p>Split each document into <strong>overlapping sentence chunks</strong>.</p>
+<p>Rules: - Each chunk contains <code>chunk_size</code> consecutive sentences (default = 2). - Adjacent chunks share <strong>1 sentence</strong> (overlap), so context is not cut off at boundaries. - Example with <code>chunk_size=2</code> and sentences <code>[A, B, C, D]</code>: - Chunk 0 → <code>"A B"</code> - Chunk 1 → <code>"B C"</code> ← shares B with chunk 0 - Chunk 2 → <code>"C D"</code> ← shares C with chunk 1</p>
+<blockquote class="blockquote">
+<p><strong>Hint:</strong> The step between chunk start positions is <code>chunk_size - 1</code>. Use <code>re.split(r'(?&lt;=[.!?])\s+', text)</code> to split into sentences.</p>
+</blockquote>
+<div id="cell-8" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> chunk_documents(docs, chunk_size<span class="op">=</span><span class="dv">2</span>):    <span class="st">"""    Split each document into overlapping sentence chunks.    Args:        docs       : list of dicts with keys 'id' and 'text'        chunk_size : number of sentences per chunk    Returns:        list of dicts with keys 'id', 'text', 'doc_id'    """</span>    all_chunks <span class="op">=</span> []    <span class="cf">for</span> doc <span class="kw">in</span> docs:        sentences <span class="op">=</span> re.split(<span class="vs">r'</span><span class="kw">(</span><span class="fu">?&lt;</span><span class="vs">=</span><span class="pp">[.!?]</span><span class="kw">)</span><span class="dv">\s</span><span class="op">+</span><span class="vs">'</span>, doc[<span class="st">"text"</span>].strip())        <span class="co"># </span><span class="al">TODO</span><span class="co">: iterate through sentences in steps of (chunk_size - 1)        #       build a chunk string by joining chunk_size consecutive sentences        #       append a dict with keys: id, text, doc_id        #       id format: f"{doc['id']}_c{i:02d}"        for i in range(0, ???, ???):            chunk_text = ???            if not chunk_text.strip():                continue            all_chunks.append({                "id":     ???,                "text":   ???,                "doc_id": ???,            })    return all_chunks</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="cell-9" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── </span><span class="al">TEST</span><span class="co"> 1 ── run this to check your workchunks = chunk_documents(DOCUMENTS, chunk_size=2)assert len(chunks) &gt; len(DOCUMENTS), "You should have more chunks than documents after splitting."assert all("id" in c and "text" in c and "doc_id" in c for c in chunks), "Each chunk must have id, text, doc_id."assert any("_c01" in c["id"] for c in chunks), "Chunk IDs should follow the format doc_id_c01, _c02, etc."print(f"✅ Task 1 passed — {len(DOCUMENTS)} documents → {len(chunks)} chunks")print(f"   Sample chunk: [{chunks[0]['id']}] {chunks[0]['text'][:80]}...")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="task-2-build-the-vector-index-10-min" class="level2">
+<h2 class="anchored" data-anchor-id="task-2-build-the-vector-index-10-min">Task 2 — Build the Vector Index (10 min)</h2>
+<p>Store all chunks in a <strong>ChromaDB</strong> collection using SentenceTransformer embeddings.</p>
+<p>Steps: 1. Create an embedding function using <code>SentenceTransformerEmbeddingFunction</code> with model <code>"all-MiniLM-L6-v2"</code>. 2. Create an in-memory ChromaDB client with <code>chromadb.Client()</code>. 3. Create a collection named <code>"bootcamp_kb"</code> with the embedding function. 4. Add all chunks — you need <code>ids</code>, <code>documents</code> (the text), and <code>metadatas</code> (the doc_id).</p>
+<blockquote class="blockquote">
+<p><strong>Hint:</strong> <code>collection.add(ids=[...], documents=[...], metadatas=[...])</code></p>
+</blockquote>
+<div id="cell-11" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_vector_index(chunks):    <span class="st">"""    Embed all chunks and store them in a ChromaDB collection.    Returns:        ChromaDB collection object    """</span>    <span class="co"># </span><span class="al">TODO</span><span class="co">: create the SentenceTransformer embedding function    ef = ???    # </span><span class="al">TODO</span><span class="co">: create an in-memory ChromaDB client    client = ???    # </span><span class="al">TODO</span><span class="co">: create a collection named "bootcamp_kb" with the embedding function    collection = ???    # </span><span class="al">TODO</span><span class="co">: add all chunks to the collection    collection.add(        ids       = ???,        documents = ???,        metadatas = ???,    )    return collection</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="cell-12" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── </span><span class="al">TEST</span><span class="co"> 2 ── run this to check your workcollection = build_vector_index(chunks)count = collection.count()assert count == len(chunks), f"Expected {len(chunks)} items in the collection, got {count}."results = collection.query(query_texts=["What is a watermark in streaming?"], n_results=3)assert len(results["documents"][0]) == 3, "Query should return 3 results."print(f"✅ Task 2 passed — {count} chunks indexed in ChromaDB")print(f"   Top result for 'watermark': {results['documents'][0][0][:80]}...")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="task-3-bm25-keyword-search-10-min" class="level2">
+<h2 class="anchored" data-anchor-id="task-3-bm25-keyword-search-10-min">Task 3 — BM25 Keyword Search (10 min)</h2>
+<p>Implement keyword-based search using the <strong>BM25</strong> ranking algorithm.</p>
+<p>Steps: 1. Tokenize each chunk’s text: lowercase and split by whitespace. 2. Build a <code>BM25Okapi</code> index from the tokenized corpus. 3. Get BM25 scores for the query (also tokenized). 4. Return the <code>top_k</code> results sorted by score descending.</p>
+<blockquote class="blockquote">
+<p><strong>Hint:</strong> <code>bm25.get_scores(query.lower().split())</code> returns a score for every chunk.</p>
+</blockquote>
+<div id="cell-14" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> keyword_search(chunks, query, top_k<span class="op">=</span><span class="dv">8</span>):    <span class="st">"""    Search chunks using BM25 keyword ranking.    Returns:        list of (score, chunk_dict) tuples, sorted by score descending    """</span>    <span class="co"># </span><span class="al">TODO</span><span class="co">: tokenize every chunk (lowercase split)    tokenized_corpus = ???    # </span><span class="al">TODO</span><span class="co">: build the BM25 index    bm25 = ???    # </span><span class="al">TODO</span><span class="co">: score the query against all chunks    scores = ???    # </span><span class="al">TODO</span><span class="co">: pair each score with its chunk, sort descending, return top_k    ranked = sorted(???, key=lambda x: x[0], reverse=True)    return ranked[:top_k]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="cell-15" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── </span><span class="al">TEST</span><span class="co"> 3 ── run this to check your workbm25_results = keyword_search(chunks, "What is a watermark in streaming?", top_k=5)assert len(bm25_results) == 5, "Should return exactly 5 results."assert all(isinstance(s, float) and isinstance(c, dict) for s, c in bm25_results), \    "Each result must be a (float, dict) tuple."assert bm25_results[0][0] &gt;= bm25_results[-1][0], "Results must be sorted descending by score."print(f"✅ Task 3 passed — BM25 keyword search working")print(f"   Top BM25 match (score {bm25_results[0][0]:.3f}): {bm25_results[0][1]['text'][:80]}...")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="task-4-hybrid-search-with-reciprocal-rank-fusion-10-min" class="level2">
+<h2 class="anchored" data-anchor-id="task-4-hybrid-search-with-reciprocal-rank-fusion-10-min">Task 4 — Hybrid Search with Reciprocal Rank Fusion (10 min)</h2>
+<p>Merge the vector results and the BM25 results using <strong>RRF</strong>.</p>
+<p>The RRF formula for a document is:</p>
+<p><span class="math display">\[\text{score} = \sum_{\text{list}} \frac{1}{k + \text{rank}}\]</span></p>
+<p>Where <code>k = 60</code> (standard constant) and <code>rank</code> starts at <strong>1</strong> (not 0).</p>
+<p>Steps: 1. For each document in the vector hit list, add <code>1 / (k + rank)</code> to its running score. 2. Do the same for the BM25 hit list. 3. Sort all documents by their combined RRF score, return top <code>top_k</code>.</p>
+<blockquote class="blockquote">
+<p><strong>Hint:</strong> Use a dict keyed by chunk id to accumulate scores across both lists.</p>
+</blockquote>
+<div id="cell-17" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fuse_with_rrf(vector_hits, bm25_hits, k<span class="op">=</span><span class="dv">60</span>, top_k<span class="op">=</span><span class="dv">5</span>):    <span class="st">"""    Merge vector and BM25 results with Reciprocal Rank Fusion.    Args:        vector_hits : list of dicts from collection.query  (keys: 'id', 'document')        bm25_hits   : list of (score, chunk_dict) tuples from keyword_search    Returns:        list of top_k chunk dicts sorted by RRF score descending    """</span>    rrf_scores  <span class="op">=</span> {}   <span class="co"># chunk_id → cumulative RRF score    id_to_chunk = {}   # chunk_id → chunk dict    # </span><span class="al">TODO</span><span class="co">: score vector hits — rank starts at 1    for rank, hit in enumerate(vector_hits, start=1):        cid = hit["id"]        rrf_scores[cid]  = rrf_scores.get(cid, 0.0) + ???        id_to_chunk[cid] = {"id": cid, "text": hit["document"]}    # </span><span class="al">TODO</span><span class="co">: score BM25 hits — rank starts at 1    for rank, (_, chunk) in enumerate(bm25_hits, start=1):        cid = chunk["id"]        rrf_scores[cid]  = rrf_scores.get(cid, 0.0) + ???        id_to_chunk[cid] = chunk    # </span><span class="al">TODO</span><span class="co">: sort by RRF score descending and return top_k chunk dicts    sorted_ids = sorted(rrf_scores, key=lambda x: ???, reverse=True)    return [id_to_chunk[cid] for cid in sorted_ids[:top_k]]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="cell-18" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── </span><span class="al">TEST</span><span class="co"> 4 ── run this to check your workquery = "How does RRF merge vector and keyword search results?"vec_raw  = collection.query(query_texts=[query], n_results=8)vec_hits = [{"id": i, "document": d}            for i, d in zip(vec_raw["ids"][0], vec_raw["documents"][0])]bm25_hits = keyword_search(chunks, query, top_k=8)hybrid = fuse_with_rrf(vec_hits, bm25_hits, top_k=5)assert len(hybrid) &lt;= 5, "Should return at most 5 results."assert all("id" in c and "text" in c for c in hybrid), "Each result must have id and text."print(f"✅ Task 4 passed — RRF fusion working ({len(hybrid)} results)")print(f"   Top hybrid result: {hybrid[0]['text'][:100]}...")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="task-5-cross-encoder-reranking-10-min" class="level2">
+<h2 class="anchored" data-anchor-id="task-5-cross-encoder-reranking-10-min">Task 5 — Cross-Encoder Reranking (10 min)</h2>
+<p>Add a <strong>second-stage reranker</strong> that scores each (query, document) pair jointly.</p>
+<p>Steps: 1. Create a <code>CrossEncoder</code> using model <code>"cross-encoder/ms-marco-MiniLM-L-6-v2"</code>. 2. Build a list of <code>(query, doc_text)</code> pairs — one per candidate. 3. Call <code>model.predict(pairs)</code> to get a relevance score per pair. 4. Sort candidates by score descending and return the top <code>top_k</code>.</p>
+<blockquote class="blockquote">
+<p><strong>Why?</strong> The cross-encoder sees both the query and document together, giving much more accurate relevance scores than cosine similarity between independent embeddings.</p>
+</blockquote>
+<div id="cell-20" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> rerank(query, candidates, top_k<span class="op">=</span><span class="dv">3</span>):    <span class="st">"""    Rerank candidates using a cross-encoder relevance model.    Args:        query      : the user's question (string)        candidates : list of chunk dicts (output of fuse_with_rrf)        top_k      : how many to return after reranking    Returns:        list of top_k chunk dicts sorted by cross-encoder score descending    """</span>    <span class="co"># </span><span class="al">TODO</span><span class="co">: load the cross-encoder model    model = ???    # </span><span class="al">TODO</span><span class="co">: build (query, document_text) pairs for every candidate    pairs = ???    # </span><span class="al">TODO</span><span class="co">: predict relevance scores for all pairs at once    scores = ???    # </span><span class="al">TODO</span><span class="co">: zip scores with candidates, sort descending, return top_k dicts    ranked = sorted(???, key=lambda x: x[0], reverse=True)    return [doc for _, doc in ranked[:top_k]]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="cell-21" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── </span><span class="al">TEST</span><span class="co"> 5 ── run this to check your workquery      = "What is the difference between tumbling and sliding windows?"vec_raw    = collection.query(query_texts=[query], n_results=8)vec_hits   = [{"id": i, "document": d}               for i, d in zip(vec_raw["ids"][0], vec_raw["documents"][0])]bm25_hits  = keyword_search(chunks, query, top_k=8)hybrid     = fuse_with_rrf(vec_hits, bm25_hits, top_k=6)final_docs = rerank(query, hybrid, top_k=3)assert len(final_docs) == 3, "Should return exactly 3 results after reranking."print(f"✅ Task 5 passed — cross-encoder reranking working")for i, doc in enumerate(final_docs, 1):    print(f"  [{i}] {doc['text'][:100]}...")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="task-6-evaluation-full-pipeline-10-min" class="level2">
+<h2 class="anchored" data-anchor-id="task-6-evaluation-full-pipeline-10-min">Task 6 — Evaluation + Full Pipeline (10 min)</h2>
+<p><strong>Part A:</strong> Implement <code>evaluate_precision()</code> — a simplified version of RAGAS Context Precision.</p>
+<p>Context Precision = fraction of retrieved chunks whose cosine similarity with the query exceeds a threshold.</p>
+<p><strong>Part B:</strong> Wire everything together in <code>run_pipeline()</code> and run it on three queries.</p>
+<blockquote class="blockquote">
+<p><strong>Hint for Part A:</strong> <code>embed_model.encode(text, normalize_embeddings=True)</code> returns a unit vector. Cosine similarity between two unit vectors = <code>np.dot(vec_a, vec_b)</code>.</p>
+</blockquote>
+<div id="cell-23" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>embed_model <span class="op">=</span> SentenceTransformer(<span class="st">"all-MiniLM-L6-v2"</span>)<span class="kw">def</span> evaluate_precision(query, retrieved_docs, threshold<span class="op">=</span><span class="fl">0.30</span>):    <span class="st">"""    Compute context precision: fraction of retrieved chunks    with cosine similarity &gt; threshold relative to the query.    Returns: float between 0.0 and 1.0    """</span>    query_emb <span class="op">=</span> embed_model.encode(query, normalize_embeddings<span class="op">=</span><span class="va">True</span>)    <span class="co"># </span><span class="al">TODO</span><span class="co">: for each doc in retrieved_docs, encode its text and compute cosine similarity    scores = []    for doc in retrieved_docs:        doc_emb = ???        similarity = ???        scores.append(similarity)    # </span><span class="al">TODO</span><span class="co">: compute the fraction of scores above the threshold    precision = ???    return round(precision, 3)def run_pipeline(query, top_k_retrieve=8, top_k_rerank=3):    """    Full RAG pipeline: query → hybrid retrieval → rerank → prompt → evaluation.    """    print(f"\nQUERY: {query}")    print("-" * 60)    # Stage 1: Vector search    vec_raw  = collection.query(query_texts=[query], n_results=top_k_retrieve)    vec_hits = [{"id": i, "document": d}                for i, d in zip(vec_raw["ids"][0], vec_raw["documents"][0])]    # Stage 2: BM25 keyword search    bm25_hits = keyword_search(chunks, query, top_k=top_k_retrieve)    # Stage 3: RRF fusion    hybrid = fuse_with_rrf(vec_hits, bm25_hits, top_k=top_k_retrieve)    # Stage 4: Cross-encoder rerank    final_docs = rerank(query, hybrid, top_k=top_k_rerank)    # Stage 5: Build RAG prompt (in production you would call an LLM here)    context = "\n\n".join(f"[{i+1}] {d['text']}" for i, d in enumerate(final_docs))    prompt  = (        f"Answer based strictly on the context below.\n\n"        f"CONTEXT:\n{context}\n\n"        f"QUESTION: {query}\nANSWER:"    )    # Stage 6: Evaluate    precision = evaluate_precision(query, final_docs)    print(f"Top {top_k_rerank} chunks after reranking:")    for i, doc in enumerate(final_docs, 1):        print(f"  [{i}] {doc['text'][:90]}...")    print(f"\nContext Precision: {precision}")    if precision &lt; 0.5:        print("⚠️  Low precision — try adjusting chunk size or threshold.")    else:        print("✅  Good retrieval quality.")    print(f"\nPrompt (first 300 chars):\n{prompt[:300]}...")    return final_docs, precision</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="cell-24" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── </span><span class="al">TEST</span><span class="co"> 6 ── run the full pipeline on three queriesTEST_QUERIES = [    "How does Kafka guarantee message ordering?",    "What is the difference between tumbling and sliding windows?",    "How does cross-encoder reranking improve RAG accuracy?",]all_passed = Truefor q in TEST_QUERIES:    docs, prec = run_pipeline(q)    if len(docs) != 3 or not (0.0 &lt;= prec &lt;= 1.0):        all_passed = False        print(f"❌ Issue with query: {q}")if all_passed:    print("\n" + "="*60)    print("✅ ALL TASKS COMPLETE — Full RAG pipeline working!")    print("="*60)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="bonus-challenge-if-you-finish-early" class="level2">
+<h2 class="anchored" data-anchor-id="bonus-challenge-if-you-finish-early">Bonus Challenge (if you finish early)</h2>
+<p>Pick <strong>one</strong> of the following:</p>
+<p><strong>A — Chunk size experiment</strong> Run <code>run_pipeline()</code> with <code>chunk_size=1</code> and <code>chunk_size=3</code> and compare the precision scores. Which produces better results for these queries, and why?</p>
+<p><strong>B — Threshold sensitivity</strong> Change the <code>threshold</code> in <code>evaluate_precision()</code> from <code>0.30</code> to <code>0.50</code>. How many of your retrieved chunks survive at the higher threshold? What does this tell you about retrieval quality?</p>
+<p><strong>C — Remove the reranker</strong> Comment out the rerank step in <code>run_pipeline()</code> and pass <code>hybrid</code> directly to <code>evaluate_precision()</code>. Does precision go up or down? Explain why.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/mohammadyusif\.github\.io\/modern-data-engineering-ai\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../L03/Day3_Lab.html" class="pagination-link" aria-label="Lab: Vector Databases and Advanced RAG Engineering">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Lab: Vector Databases and Advanced RAG Engineering</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../L04/00_intro.html" class="pagination-link" aria-label="Day 4 — Data Quality, Governance, and Lineage">
+        <span class="nav-page-text">Day 4 — Data Quality, Governance, and Lineage</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Modern Data Engineering for AI Systems — SDAIA Academy capstone course</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/MohammadYusif/modern-data-engineering-ai">
+<p>Source</p>
+</a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
