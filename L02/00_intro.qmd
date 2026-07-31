@@ -8,14 +8,17 @@ Both of those still assumed a comfortable premise: data arrives, sits somewhere,
 and gets processed **later**. Today we break that premise.
 
 Most of the data an AI system actually cares about — a user's click, a sensor
-reading, a credit-card swipe, a chat message arriving mid-conversation — is not
-useful "later." A fraud model that flags a stolen card six hours after the
-purchase has already failed. A recommendation engine that updates your feed
-once a day feels broken compared to one that adapts on your very next scroll.
+reading, a credit-card swipe, a server logging an error, a chat message
+arriving mid-conversation — is not useful "later." A fraud model that flags a
+stolen card six hours after the purchase has already failed. A recommendation
+engine that updates your feed once a day feels broken compared to one that
+adapts on your very next scroll.
 **Real-time data engineering is the discipline of treating data as a
 continuous, never-ending flow of individual events, and processing each one
 within milliseconds of it happening — not storing it to process in bulk
-tonight.**
+tonight.** Concretely, that means extracting each event the instant it's
+generated, transmitting it, cleaning and enriching it, and delivering it to
+its final destination, all within fractions of a second.
 
 This matters even more once AI is in the loop. LLM inference is slow relative
 to a database query — a call can take seconds, not milliseconds — and

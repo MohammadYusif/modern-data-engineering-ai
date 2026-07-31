@@ -8,8 +8,9 @@ format: html
 Picture a busy online bookstore running on yesterday's architecture: **batch
 processing**. Every click, search, and cart addition during the day gets
 written to a holding area and left untouched. Nothing happens to it until
-midnight, when an automated job bundles the entire day's activity into one
-enormous file, ships it off to be processed, and — by 2 a.m. — the dashboards
+midnight, when an automated job bundles millions of the day's individual
+actions into one enormous file, ships it off to be processed, and — by 2 a.m.
+— the dashboards
 and inventory counts finally catch up to reality.
 
 That works fine for a monthly financial audit. It fails badly the moment the
@@ -64,7 +65,7 @@ graph LR
 - **Ride-hailing (Uber/Careem).** If ETA and fare calculation ran as a nightly
   batch, the app would be useless. Instead, your phone streams location
   continuously; the broker catches it, and a stream processor recomputes your
-  ETA every second.
+  ETA and fare every second.
 - **Financial fraud detection.** A batch system discovers a stolen card hours
   after the fact. A streaming system consumes the swipe event, scores it for
   anomalies, and can freeze the account before the transaction even clears.
@@ -96,7 +97,7 @@ deep the backlog gets.
 |---|---|---|
 | Handling LLM latency | Poor — a connection stays open for seconds/minutes during inference, risking timeouts and wasted compute | Excellent — the task is accepted instantly; inference happens asynchronously in the background |
 | System coupling | Tight — if the LLM provider goes down, the calling app crashes immediately | Loose — the broker holds messages safely until the AI service is back |
-| Resource scaling | Rigid — hard to scale compute dynamically for bursty query traffic | Elastic — a growing queue can trigger extra worker containers on demand |
+| Resource scaling | Rigid — hard to scale compute dynamically for bursty query traffic | Elastic — if the inference-topic queue grows, Kubernetes can spin up 50 extra GPU worker containers on demand to clear the backlog |
 | Extensibility | Hard — a new feature means editing the core application | Easy — hook a new consumer onto the existing broker topic, no other code touched |
 
 ### Core architectural components
@@ -125,6 +126,7 @@ class MockEventBroker:
         self.topics = {
             "raw_support_queries": asyncio.Queue(),
             "processed_embeddings": asyncio.Queue(),
+            "ai_agent_responses": asyncio.Queue(),
         }
 
     async def publish(self, topic, message):
@@ -133,6 +135,15 @@ class MockEventBroker:
     async def consume(self, topic):
         return await self.topics[topic].get()
 ```
+
+This backs a small three-stage, multi-agent pipeline built entirely on
+`asyncio`: a Producer emits raw support queries onto the first topic, an
+Embedding Agent consumes them, chunks and embeds the text, and republishes the
+result onto `processed_embeddings`, and an Inference Agent consumes *that* and
+runs its own autonomous response strategy, publishing the final answer onto
+`ai_agent_responses`. Each hop between agents is just another publish/consume
+pair on its own queue — which is why the broker needs three topic channels,
+not two.
 
 The producer calls `publish()` and immediately goes back to work — it never
 waits to see what the embedding or inference consumer does with the message.

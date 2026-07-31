@@ -15,7 +15,11 @@ define what the rules are.
 
 Automated data governance is the shift from static, written-down rules to
 dynamic, machine-learning-driven software that monitors, classifies, and
-protects data continuously as it flows. Built on platforms like Collibra,
+protects data continuously as it flows. Done well, it is what lets an
+organization keep its data accurate, secure, consistent, compliant, and
+accessible without requiring heavy manual work — five properties a
+hand-maintained policy document could promise but rarely delivered at
+enterprise scale. Built on platforms like Collibra,
 Alation, Informatica CLAIRE, or open-source engines like Egeria, a modern
 framework operates as a control plane across four layers.
 
@@ -29,8 +33,9 @@ graph TD
 ### 1. Automated discovery and AI classification
 
 You cannot govern data you don't know exists, and enterprises routinely have
-thousands of tables scattered across lakes, warehouses, and production
-databases. Machine learning models continuously scan storage environments,
+thousands of tables scattered across data lakes, cloud warehouses like
+Snowflake, and production databases. Machine learning models continuously
+scan storage environments,
 reading structural patterns, regex indicators, and value distributions
 instead of waiting for a human to label each column. The outcome: sensitive
 data — PII, credit-card numbers (PCI), medical data (HIPAA) — gets

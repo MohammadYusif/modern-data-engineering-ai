@@ -84,6 +84,25 @@ meaning) to +1 (identical meaning), and two vectors pointing the same
 direction score as highly similar even if one document is much longer than
 the other.
 
+### A concrete worked example
+
+Suppose a vector database stores three sentences, each reduced here to a
+simplified 3-dimensional embedding for illustration:
+
+| ID | Text | Embedding (simplified 3D) |
+|---|---|---|
+| 1 | "The sky is blue" | `[0.9, 0.1, 0.2]` |
+| 2 | "Grass is green" | `[0.1, 0.9, 0.1]` |
+| 3 | "The ocean is deep" | `[0.8, 0.2, 0.3]` |
+
+A query about the sky would embed close to `[0.9, 0.1, 0.2]`, land nearest to
+sentence 1, and land second-nearest to sentence 3 — "the ocean is deep" — not
+because the words overlap, but because both sentences describe a
+similarly-colored, similarly-toned natural scene. Sentence 2 sits far away in
+this tiny 3D space, exactly like "grass is green" is a different topic.
+Real embedding models don't use 3 dimensions — they typically use hundreds —
+but the geometry works identically at scale.
+
 ### Why this matters
 
 Without vector databases and embeddings, LLMs have two structural flaws: they
@@ -186,12 +205,13 @@ at runtime.
 ## Semantic search and similarity search
 
 **Keyword search** — the traditional approach — matches exact words or
-substrings: `LIKE` clauses, inverted indexes, boolean logic. Search for
-"canine therapy" on a site whose articles only say "dog healing," and you get
-zero results, even though the content is exactly what you wanted. Keyword
+substrings: `LIKE` clauses, inverted indexes, boolean logic. A query for
+"car" retrieves only documents containing the literal string "car." Search
+for "canine therapy" on a site whose articles only say "dog healing," and you
+get zero results, even though the content is exactly what you wanted. Keyword
 search is blind to meaning: it misses synonyms ("automobile" vs. "car"),
-misses context (is "Jaguar" an animal, a car, or an OS?), and breaks on
-polysemy — one word, many meanings.
+misses context (is "Jaguar" an animal, a car, or an OS?), word order matters
+in brittle ways, and it breaks on polysemy — one word, many meanings.
 
 **Semantic search** understands the *intent* behind a query rather than its
 literal words. "Ways to calm a nervous dog" retrieves documents about
@@ -204,17 +224,35 @@ documents into a shared meaning space.
 **Similarity search** is the mathematical engine underneath semantic search —
 not a linguistic operation at all, but a geometric one: given a target vector,
 find every stored vector close to it by some distance metric. A useful
-non-text analogy: imagine a room of people, each with an age and a height. Ask
+non-text analogy: imagine a room of people, each with an age and a height —
+Alice (25, 160cm), Bob (26, 162cm), Carol (45, 170cm), Dave (46, 172cm). Ask
 "find people similar to Alice" and a keyword match fails outright (no one
 else is named Alice), but plotting age against height and measuring distance
-immediately shows that Bob (26, 162cm) is close to Alice (25, 160cm) while
-Carol (45, 170cm) is far. Vector databases do exactly this, just across
-hundreds of dimensions instead of two.
+immediately shows that Bob is close to Alice, while Carol and Dave — close to
+*each other* but far from Alice — are not similar to her. Vector databases do
+exactly this, just across hundreds of dimensions instead of two.
+
+Concretely, this runs in three steps. First, **embedding**: both the query
+and every stored document are converted into vectors with the same embedding
+model — e.g., the query "happy dog" might embed as `[0.9, 0.1, 0.8]`, a
+document "joyful puppy" as `[0.88, 0.12, 0.79]` (very close), and a document
+"sad cat" as `[0.2, 0.9, 0.1]` (far away). Second, **distance calculation**:
+pick a metric — cosine similarity, Euclidean distance, or dot product (see
+the table above) — and score every stored vector against the query vector.
+Third, **nearest-neighbor search**: find the top-*k* stored vectors with the
+highest similarity. A brute-force search compares the query against every
+single stored vector — accurate, but too slow once there are millions of
+them — so in practice vector databases use **Approximate Nearest Neighbor
+(ANN)** indexing (HNSW, IVF) to find "good enough" neighbors in
+milliseconds instead.
+
+For example, a user searching "steps to fix a flat tire" shows the gap
+directly:
 
 | Feature | Keyword search (old school) | Semantic / similarity search (modern) |
 |---|---|---|
 | How it searches | Scans literal strings of text characters | Converts the query to a vector; finds nearest-neighbor vectors |
-| What it finds | Only documents containing the exact words | Documents using different words for the same concept |
+| What it finds | Only documents containing the exact words "fix," "flat," and "tire" | Documents about "changing a punctured wheel" or "replacing a blown tire," even without those exact words |
 | Flaw | Misses relevant documents that use different vocabulary | Needs more compute and a purpose-built vector database |
 
 ### Summary

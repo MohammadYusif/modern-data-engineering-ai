@@ -79,9 +79,11 @@ compliance. This is also Day 4, and it's why lineage exists: a governance
 rule with no lineage trail can't tell you what a policy change will actually
 affect.
 
-**Step 4 — Data storage.** Validated, governed data lands in the lakehouse —
-bronze (raw), silver (cleansed), gold (aggregated) — using the Delta Lake
-ACID guarantees, `MERGE`, and schema enforcement from Day 1.
+**Step 4 — Data storage.** Validated, governed data lands in persistent
+storage — a data lake, a lakehouse, or a warehouse, depending on the
+platform. This course's stack is the lakehouse: bronze (raw), silver
+(cleansed), gold (aggregated) — using the Delta Lake ACID guarantees,
+`MERGE`, and schema enforcement from Day 1.
 
 **Step 5 — Embedding generation.** Documents and records are converted into
 vector embeddings using an embedding model (Day 3's sentence-transformers or
@@ -120,9 +122,18 @@ what's actually graded):
 None of the layers above wire themselves together. **AI infrastructure
 orchestration** is the automated coordination of compute, storage,
 networking, and AI services so the pipeline above runs reliably, efficiently,
-and at scale — the conductor making sure ingestion, quality gating, storage,
-embedding, and serving each run at the right time without stepping on each
-other.
+and at scale.
+
+The simplest way to picture it: if your AI platform is an orchestra,
+orchestration is the conductor — making sure each section (violins, brass,
+percussion) plays at the right time, at the right volume, without crashing
+into each other. Put another way: data platforms prepare the facts, LLMs act
+as the brain, and orchestration is the conductor of that orchestra — it
+coordinates the underlying compute chips, schedules deep learning workloads,
+manages model deployment routes, and optimizes hardware efficiency across
+complex multi-cloud ecosystems. Concretely, that's the conductor making sure
+ingestion, quality gating, storage, embedding, and serving each run at the
+right time without stepping on each other.
 
 ### Workflow orchestration: the DAG
 
@@ -144,6 +155,27 @@ nodes, dependencies as edges, executed in topological order:
   without duplicating side effects), and a sensor for every external
   dependency instead of a fixed sleep/wait.
 
+### Platform architecture: five integrated modules
+
+At production scale, the reference architecture above maps onto five
+concrete modules wired together by that DAG, plus an observability layer
+running alongside all of them:
+
+- **Module 1 — Ingestion:** Kafka topics receive events from every source —
+  APIs, IoT, and CDC (change data capture) from Postgres.
+- **Module 2 — Storage:** Delta Lake on S3/ADLS, split into raw (bronze),
+  cleaned (silver), and aggregated (gold) zones.
+- **Module 3 — Processing:** Spark Structured Streaming handles the
+  real-time path; Spark batch jobs or dbt handle the silver→gold
+  transformation.
+- **Module 4 — Serving:** a FastAPI service reads the gold Delta tables and
+  queries Chroma or Pinecone for vector similarity.
+- **Module 5 — Orchestration:** the Airflow DAG wires the whole pipeline
+  together — ingest → process → validate → serve.
+- **Observability:** OpenLineage events emitted at each stage feed Marquez
+  for lineage tracking, while Great Expectations enforces the quality gates
+  along the way.
+
 ### Beyond workflows: the other orchestration layers
 
 At real enterprise scale, "orchestration" splits into more than just DAG
@@ -158,14 +190,76 @@ stand up:
 | Model | Embedding models, rerankers, LLMs in production | vLLM, Triton, BentoML, Ray Serve |
 | Vector DB | Index rebuilds, shard rebalancing, backups | Coordinated with the data lake's own backup schedule |
 | Data | Movement and quality across pipeline stages | Kafka, dbt, Great Expectations, dlt |
+| Storage | Persistent volumes and backup, coordinated with the data lake's own schedule | CSI, Velero |
 
 Without this coordination, the failure modes are concrete: a GPU training job
 starves a vector DB of latency budget, an embedding job starts before its
 upstream chunks are ready, scaling requires slow manual provisioning, one
 pipeline failure takes down the whole system instead of retrying in
+isolation, noisy-neighbor workloads step on each other without any tenant
 isolation, and a version upgrade breaks consumers mid-pipeline instead of
 rolling out as a canary. Orchestration exists specifically to turn each of
-those into an automated, recoverable non-event.
+those into an automated, recoverable non-event — problem by problem:
+
+| Problem | Without orchestration | With orchestration |
+|---|---|---|
+| Resource contention | GPU training kills vector DB latency | Dynamic resource allocation |
+| Pipeline dependencies | Embedding starts before chunks are ready | DAG-based scheduling |
+| Scaling | Manual provisioning — slow and expensive | Auto-scaling based on load |
+| Failure recovery | Entire pipeline crashes | Automatic retries and fallbacks |
+| Multi-tenancy | Noisy-neighbor problems between workloads | Resource isolation |
+| Version management | Breaking changes mid-pipeline | Canary deployments |
+
+### The five orchestration categories, in detail
+
+Each row of the summary table above is really a small decision space of its
+own. Broken out by category:
+
+**1. Compute orchestration** manages GPU/CPU resources across workloads.
+
+| Tool | Purpose | Use case |
+|---|---|---|
+| Kubernetes | Container orchestration | Run embedding pods, LLM inference |
+| Kueue | Queue management | Prioritize real-time vs. batch jobs |
+| Volcano | Batch scheduling | Large-scale embedding jobs |
+| Karpenter | Auto-scaling | Scale GPU nodes when the queue grows |
+
+**2. Workflow orchestration** manages multi-step pipelines (ingest → chunk →
+embed → index).
+
+| Tool | Purpose | RAG use case |
+|---|---|---|
+| Apache Airflow | DAG scheduling | Daily document refresh |
+| Prefect | Dynamic workflows | Event-driven ingestion |
+| Dagster | Asset-aware pipelines | Data quality triggers |
+| Temporal | Durable execution | Fault-tolerant RAG queries |
+
+**3. Model orchestration** manages embedding models, rerankers, and LLMs.
+
+| Tool | Purpose | Example |
+|---|---|---|
+| vLLM | LLM inference | Serving Llama 3 |
+| Triton | Multi-framework serving | Embedding + LLM together |
+| BentoML | Model packaging | Deploy a custom reranker |
+| Ray Serve | Scalable serving | Multi-model endpoint |
+
+**4. Vector DB orchestration** manages vector database operations.
+
+| Operation | Orchestration need |
+|---|---|
+| Index rebuilds | Scheduled during low-traffic windows |
+| Shard rebalancing | Automatic when data grows |
+| Backup/restore | Coordinated with the data lake |
+| Version upgrades | Blue-green deployment |
+
+**5. Data orchestration** coordinates data movement across pipeline stages.
+
+| Tool | Purpose |
+|---|---|
+| Apache Kafka | Streaming data between stages |
+| dbt | SQL transformations at scale |
+| Great Expectations | Data quality at each step |
+| dlt (data load tool) | Incremental loading |
 
 ### Why AI infrastructure orchestration isn't just DevOps with a new name
 
@@ -189,6 +283,15 @@ know how to reason about the second — which is exactly why the
 GPU/model-aware tools in the table above (Kueue, Karpenter, vLLM, Ray
 Serve) exist as a separate layer rather than just "more Kubernetes."
 
+Put simply, AI infrastructure orchestration bridges raw hardware processing
+power with software execution — it turns a fragmented collection of
+bare-metal servers and cloud instances into an automated, responsive
+environment that scales workloads smoothly, manages model memory footprints,
+and keeps AI applications running cost-effectively in production. In short,
+it automates the deployment, scaling, coordination, and management of AI
+systems, data pipelines, compute resources, and machine learning workflows
+across the modern enterprise.
+
 ## Why integration is the point
 
 A fully integrated platform is what moves an enterprise from an AI prototype
@@ -200,6 +303,20 @@ layer only ever sees governed, quality-checked data; fewer hallucinations
 because responses are grounded in a trusted corpus, not whatever happened to
 be lying around; and governance and compliance enforced automatically instead
 of depending on someone remembering a policy.
+
+Named out as a checklist, the enterprise benefits of that combination are:
+
+- **Unified AI ecosystem** — all data and AI operations live inside one
+  platform instead of four disconnected demos.
+- **Real-time intelligence** — the organization can react instantly to live
+  events instead of waiting on a batch refresh.
+- **Better AI accuracy** — high-quality, governed data improves RAG outputs.
+- **Reduced hallucinations** — RAG grounds AI responses in trusted enterprise
+  data instead of an ungoverned corpus.
+- **Scalability** — modern architectures scale to petabytes of data without
+  a redesign.
+- **Governance and compliance** — security and compliance are enforced
+  automatically, not left to someone remembering a policy.
 
 The [final project](02_final_project.qmd) is where you build exactly this,
 end to end, for a real (if intentionally small) dataset.

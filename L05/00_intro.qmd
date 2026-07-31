@@ -18,6 +18,12 @@ one of them fails or flags bad data." That's a systems-design question, not a
 new-library question — which is exactly the skill a production AI platform
 actually demands, and exactly what the capstone grades.
 
+The practical skills the day is built around: combining all of this week's
+components into one architecture, building a scalable AI data system out of
+them, **presenting the architectural decisions behind that system**, and
+**simulating an enterprise production environment** rather than a one-off
+notebook demo.
+
 The second half of today is the **final project**: a single starter notebook
 that already runs end-to-end using lightweight stand-ins for every one of the
 week's real tools, and your team's job — in teams of three — is to replace

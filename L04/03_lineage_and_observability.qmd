@@ -3,6 +3,15 @@ title: "Lineage and Data Observability"
 format: html
 ---
 
+Data observability and monitoring is the practice of continuously tracking,
+analyzing, and validating data systems so that data stays healthy, reliable,
+accurate, and available — the goal is to catch data problems early enough to
+fix them before they affect business operations or an AI system downstream,
+not after. In practice that discipline chases five concrete goals: detect
+data failures, improve data reliability, keep pipelines under continuous
+monitoring, ensure data quality, and prevent broken dashboards and AI errors
+from ever reaching a stakeholder.
+
 ## Monitoring tells you something broke; observability tells you why
 
 In the early days of data architecture, engineers relied on basic software

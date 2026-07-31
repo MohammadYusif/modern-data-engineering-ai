@@ -19,11 +19,15 @@ plausibly when it doesn't actually know). **Retrieval-Augmented Generation
 (RAG)** is the architecture that wires a vector database into an LLM so the
 model answers from retrieved, grounded facts instead of from memory alone.
 
-A basic RAG system just chops text into blocks and matches keywords — that's
-enough for a demo, but it breaks down in production: wrong chunks get
-retrieved, exact terms get missed, and the model drowns in irrelevant context.
-Advanced RAG engineering is the set of techniques — hybrid search, reranking,
-smarter chunking and indexing, continuous evaluation — that closes that gap.
+Vector databases and advanced RAG sit at the absolute core of
+production-grade AI systems. A basic RAG system just chops text into blocks
+and matches keywords — that's enough for a demo, but it breaks down in
+production: wrong chunks get retrieved, exact terms get missed, and the
+model drowns in irrelevant context. Advanced architecture, by contrast,
+handles millions of high-dimensional vectors with the speed, accuracy, and
+reasoning capability production systems actually need — hybrid search,
+reranking, smarter chunking and indexing, and continuous evaluation are the
+techniques that close that gap.
 
 ## Vector Databases and Advanced RAG Engineering — Day 3
 

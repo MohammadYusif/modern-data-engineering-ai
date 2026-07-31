@@ -4,12 +4,54 @@ format: html
 ---
 
 Building a production-grade streaming pipeline is a complete departure from
-batch engineering. Data is no longer a bounded file with a beginning and an
-end — it's an **unbounded dataset**: a continuous, append-only series of
-events that never finishes arriving. Producers and consumers stay **loosely
+batch engineering. System changes — a user click, an IoT temperature spike, a
+financial transaction — are instantly broadcast as individual event objects,
+typically structured as JSON, Avro, or Protobuf payloads, rather than waiting
+to land in a daily export. Data is no longer a bounded file with a beginning
+and an end — it's an **unbounded dataset**: a continuous, append-only series
+of events that never finishes arriving. Producers and consumers stay **loosely
 coupled**, talking only through the broker, never directly to each other. To
 design for that, engineers need to understand what actually happens inside
 the broker and the processor sitting on top of it.
+
+## A minimal streaming pipeline in Python
+
+Before reaching for Kafka itself, it's worth seeing the same producer /
+broker / processor shape in miniature. This small simulator swaps Kafka for a
+plain `asyncio.Queue` per topic channel:
+
+```python
+import asyncio
+import json
+import random
+from datetime import datetime
+
+# Simulating a High-Throughput Distributed Message Broker
+class StreamBroker:
+    def __init__(self):
+        # Different message topic channels
+        self.topics = {
+            "iot_sensor_stream": asyncio.Queue(),
+            "processed_alerts": asyncio.Queue(),
+        }
+
+    async def publish(self, topic, message):
+        await self.topics[topic].put(message)
+
+    async def consume(self, topic):
+        return await self.topics[topic].get()
+```
+
+`temperature_sensor_producer` emits unstructured readings from two
+independent sensors, `SENSOR_A` and `SENSOR_B`, onto `iot_sensor_stream`,
+smoothly and without caring who — if anyone — is reading them.
+`StreamBroker` itself handles the concurrent ingress of both streams safely;
+it doesn't know or care that two producers are publishing at once, since each
+call just drops a message onto the appropriate queue. On the other side,
+`anomaly_detection_stream_processor` consumes from that same queue and parses
+each incoming event in real time, running an instant mathematical threshold
+check and publishing anything that trips it onto `processed_alerts` — all
+without ever storing data in an intermediate relational table.
 
 ## Kafka: partitions, offsets, and consumer groups
 
@@ -98,26 +140,36 @@ stages; only the tools and latency budget change.
 | **Transformation** | Clean, filter, and structure the raw data | Apache Spark, dbt, PySpark, Pandas |
 | **Orchestration** | Schedule tasks, manage dependencies, handle errors across the whole system | Apache Airflow, Prefect, Dagster |
 
-Ingestion is the vacuum cleaner gathering raw material; transformation is the
-factory turning it into a usable product; orchestration is the conductor
-making sure every stage runs in the right order and recovers cleanly when
-something fails.
+Ingestion is the vacuum cleaner gathering raw material — user clicks,
+database updates, application logs — from wherever it's generated into
+central storage. Transformation is the factory turning that raw material into
+a usable product: filtering out noise, deduplicating records, and converting
+messy raw files into the standard tables downstream AI models and analytical
+tools can actually read. Orchestration is the conductor making sure every
+stage runs in the right order and recovers cleanly when something fails.
 
 ## Lab: a real-time streaming pipeline with Kafka and Delta Lake
 
 The [Day 2 lab notebook](Day2_Lab.ipynb) puts every concept above into one
-runnable pipeline, in two parts.
+runnable pipeline, in two parts. It leans on `asyncio` for the concurrent
+streaming loops, pins `pyspark==3.5.0` alongside `delta-spark==3.5.0` to
+manage the Lakehouse storage sink, and otherwise sticks to the standard
+library for the math.
 
 **Part 1 — mock Kafka streaming pipeline.** A `MockKafkaBroker` (built on
 `asyncio.Queue`, with partitions and offsets modeled explicitly) receives
 readings from three concurrent factory-sensor producers
-(`CNC_MILL_01`, `ROBOTIC_ARM_02`, `ASSEMBLY_LINE_03`). A `StreamProcessor`
-consumes them and applies all three concepts from this page at once: a
-tumbling window (per-second event counts), a sliding window (a 3-second
-rolling average), and a watermark (dropping anything older than 2 seconds).
-Anything over threshold gets published to an `anomalies_sink` topic, which a
-Delta Lake writer appends transactionally — the same ACID guarantees from
-Day 1, now on a live stream instead of a static file.
+(`CNC_MILL_01`, `ROBOTIC_ARM_02`, `ASSEMBLY_LINE_03`), each flooding the
+broker independently without talking to each other or locking on any shared
+thread state. A `StreamProcessor` consumes them and applies all three
+concepts from this page at once: a tumbling window (per-second event counts),
+a sliding window (a 3-second rolling average that keeps readings in memory
+only for that active span and evicts anything older to keep memory bounded),
+and a watermark (dropping anything older than 2 seconds). Anything over
+threshold gets published to an `anomalies_sink` topic, which a Delta Lake
+writer appends transactionally, turning the transient micro-batches back into
+durable, queryable structured logs — the same ACID guarantees from Day 1, now
+on a live stream instead of a static file.
 
 **Part 2 — a real Kafka round trip.** The mock broker never touches the
 actual `kafka-python` client, and a real capstone pipeline needs schema

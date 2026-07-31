@@ -90,9 +90,10 @@ can use it. The letters stand for:
 
 The revolution comes down to flipping the order of the last two steps.
 
-**The traditional way — ETL (Extract → Transform → Load).** Because legacy
-database storage was expensive, engineers used a separate middle-tier server
-to clean, aggregate, and shrink the data *before* storing it, then pushed the
+**The traditional way — ETL (Extract → Transform → Load).** Extract grabs raw
+data directly from production databases. Because legacy database storage was
+expensive, engineers then used a separate middle-tier server to clean,
+aggregate, and shrink the data *before* storing it, then pushed the
 pre-formatted, clean data into a rigid Data Warehouse.
 
 **The modern way — ELT (Extract → Load → Transform).** Pull raw, messy data
@@ -269,13 +270,28 @@ above end to end: ACID transactions, schema enforcement, `MERGE`,
 `OPTIMIZE`/`Z-ORDER`, `VACUUM`, Time Travel, and schema evolution — on a real,
 executed run.
 
+**Requirements.** Delta Lake requires PySpark; the lab also installs
+`delta-spark`, which hooks the Delta engine into the Spark session:
+
+```
+pyspark==3.5.0
+delta-spark==3.5.0
+```
+
+**The implementation.** The notebook initializes a local Spark session
+configured with Delta Lake, creates a mock e-commerce transaction dataset,
+then walks through the mechanics covered above on that real data: it enforces
+schema on write, runs updates securely, and rolls the table back using Time
+Travel.
+
 What to look for in the output:
 
 - The Delta Lake engine automatically catches a malicious schema deviation and
   causes a controlled crash, demonstrating how it prevents your production
   Data Lake from degrading into a disorganized "data swamp."
-- The history ledger maps out exact version numbers, timestamps, and
-  operations (`WRITE` / `APPEND`), showing how easy it is to perform
+- The history ledger maps out exact version numbers — version 0 for the
+  initial write, version 1 for the follow-up append — along with timestamps
+  and operations (`WRITE` / `APPEND`), showing how easy it is to perform
   point-in-time rollbacks for auditing or ML reproducibility.
 
 ::: {.callout-note}
