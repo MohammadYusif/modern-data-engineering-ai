@@ -167,6 +167,28 @@ isolation, and a version upgrade breaks consumers mid-pipeline instead of
 rolling out as a canary. Orchestration exists specifically to turn each of
 those into an automated, recoverable non-event.
 
+### Why AI infrastructure orchestration isn't just DevOps with a new name
+
+Managing an AI architecture means discarding some traditional DevOps
+assumptions outright, not just adding a few extra tools:
+
+| Architectural metric | Traditional software orchestration | AI infrastructure orchestration |
+|---|---|---|
+| Primary resource tracked | CPU core count and RAM utilization | GPU/TPU VRAM, High-Bandwidth Memory (HBM), and interconnect speed (NVLink) |
+| Scaling trigger | Web traffic or API request spikes | Context size, token generation speed, batch sizes |
+| Data dependencies | Static application code packages loaded from standard storage | Multi-gigabyte model weight tensors and dynamic vector-embedding caches |
+
+The underlying reason: a traditional web service scales by adding
+identical, stateless replicas — more RAM and CPU cores solve most problems.
+An LLM-serving or embedding workload is neither identical nor stateless in
+the same sense — a single model's weights can be tens of gigabytes, live
+entirely in GPU memory, and its actual throughput is bound by how fast
+tokens stream out, not by how many requests are queued. Orchestration tools
+built for the first world (classic Kubernetes autoscaling on CPU%) don't
+know how to reason about the second — which is exactly why the
+GPU/model-aware tools in the table above (Kueue, Karpenter, vLLM, Ray
+Serve) exist as a separate layer rather than just "more Kubernetes."
+
 ## Why integration is the point
 
 A fully integrated platform is what moves an enterprise from an AI prototype
