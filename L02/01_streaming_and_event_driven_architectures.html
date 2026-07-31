@@ -580,7 +580,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="from-the-midnight-truck-to-the-moving-escalator" class="level2">
 <h2 class="anchored" data-anchor-id="from-the-midnight-truck-to-the-moving-escalator">From the midnight truck to the moving escalator</h2>
-<p>Picture a busy online bookstore running on yesterday’s architecture: <strong>batch processing</strong>. Every click, search, and cart addition during the day gets written to a holding area and left untouched. Nothing happens to it until midnight, when an automated job bundles the entire day’s activity into one enormous file, ships it off to be processed, and — by 2 a.m. — the dashboards and inventory counts finally catch up to reality.</p>
+<p>Picture a busy online bookstore running on yesterday’s architecture: <strong>batch processing</strong>. Every click, search, and cart addition during the day gets written to a holding area and left untouched. Nothing happens to it until midnight, when an automated job bundles millions of the day’s individual actions into one enormous file, ships it off to be processed, and — by 2 a.m. — the dashboards and inventory counts finally catch up to reality.</p>
 <p>That works fine for a monthly financial audit. It fails badly the moment the business needs to react <em>during</em> the day. If a book goes viral on social media at 8 a.m. and sells out by 9, the inventory system won’t know it’s gone until the midnight batch runs — the store spends the rest of the day selling a book it doesn’t have. Batch processing has two structural flaws: insights are always stale (by definition, historical), and cramming 24 hours of computation into one nightly window strains the infrastructure right when it runs.</p>
 <p><strong>Streaming</strong> replaces the midnight truck with a moving escalator. The instant a customer buys a book, that action becomes an individual, self-contained <strong>event</strong> — placed directly onto the escalator instead of a holding pen. Processing engines on the other side read, clean, and analyze each event within milliseconds of it happening. Data is never allowed to sit idle.</p>
 <table class="caption-top table">
@@ -651,7 +651,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="why-this-matters" class="level3">
 <h3 class="anchored" data-anchor-id="why-this-matters">Why this matters</h3>
 <ul>
-<li><strong>Ride-hailing (Uber/Careem).</strong> If ETA and fare calculation ran as a nightly batch, the app would be useless. Instead, your phone streams location continuously; the broker catches it, and a stream processor recomputes your ETA every second.</li>
+<li><strong>Ride-hailing (Uber/Careem).</strong> If ETA and fare calculation ran as a nightly batch, the app would be useless. Instead, your phone streams location continuously; the broker catches it, and a stream processor recomputes your ETA and fare every second.</li>
 <li><strong>Financial fraud detection.</strong> A batch system discovers a stolen card hours after the fact. A streaming system consumes the swipe event, scores it for anomalies, and can freeze the account before the transaction even clears.</li>
 <li><strong>Instant personalization.</strong> Streaming pipelines feed live clicks directly into recommendation models — click on three football clips and your next scroll already reflects it, instead of waiting for tomorrow’s batch job.</li>
 </ul>
@@ -689,7 +689,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>Resource scaling</td>
 <td>Rigid — hard to scale compute dynamically for bursty query traffic</td>
-<td>Elastic — a growing queue can trigger extra worker containers on demand</td>
+<td>Elastic — if the inference-topic queue grows, Kubernetes can spin up 50 extra GPU worker containers on demand to clear the backlog</td>
 </tr>
 <tr class="even">
 <td>Extensibility</td>
@@ -713,13 +713,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.topics <span class="op">=</span> {</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">"raw_support_queries"</span>: asyncio.Queue(),</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">"processed_embeddings"</span>: asyncio.Queue(),</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="kw">def</span> publish(<span class="va">self</span>, topic, message):</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">await</span> <span class="va">self</span>.topics[topic].put(message)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="kw">def</span> consume(<span class="va">self</span>, topic):</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="cf">await</span> <span class="va">self</span>.topics[topic].get()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"ai_agent_responses"</span>: asyncio.Queue(),</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="kw">def</span> publish(<span class="va">self</span>, topic, message):</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">await</span> <span class="va">self</span>.topics[topic].put(message)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="kw">def</span> consume(<span class="va">self</span>, topic):</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="cf">await</span> <span class="va">self</span>.topics[topic].get()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This backs a small three-stage, multi-agent pipeline built entirely on <code>asyncio</code>: a Producer emits raw support queries onto the first topic, an Embedding Agent consumes them, chunks and embeds the text, and republishes the result onto <code>processed_embeddings</code>, and an Inference Agent consumes <em>that</em> and runs its own autonomous response strategy, publishing the final answer onto <code>ai_agent_responses</code>. Each hop between agents is just another publish/consume pair on its own queue — which is why the broker needs three topic channels, not two.</p>
 <p>The producer calls <code>publish()</code> and immediately goes back to work — it never waits to see what the embedding or inference consumer does with the message. That decoupling is the entire point: swap the <code>asyncio.Queue</code> for a real Kafka topic and the architecture doesn’t change, only the durability and throughput guarantees do. The lab’s <code>MockKafkaBroker</code> (in <a href="../L02/Day2_Lab.html">Day2_Lab.ipynb</a>) builds on exactly this idea, adding partitions and offsets to mirror real Kafka’s semantics.</p>
 <p>In short: an event-driven architecture lets independent AI components — producers, embedding workers, inference agents — communicate by publishing and reacting to events instead of waiting idly on each other, which is what lets a production system absorb slow, unpredictable LLM latency without tipping over.</p>
 

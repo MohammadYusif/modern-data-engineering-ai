@@ -633,7 +633,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>Transform</strong> — cleaning, formatting, and preparing the data</li>
 </ul>
 <p>The revolution comes down to flipping the order of the last two steps.</p>
-<p><strong>The traditional way — ETL (Extract → Transform → Load).</strong> Because legacy database storage was expensive, engineers used a separate middle-tier server to clean, aggregate, and shrink the data <em>before</em> storing it, then pushed the pre-formatted, clean data into a rigid Data Warehouse.</p>
+<p><strong>The traditional way — ETL (Extract → Transform → Load).</strong> Extract grabs raw data directly from production databases. Because legacy database storage was expensive, engineers then used a separate middle-tier server to clean, aggregate, and shrink the data <em>before</em> storing it, then pushed the pre-formatted, clean data into a rigid Data Warehouse.</p>
 <p><strong>The modern way — ELT (Extract → Load → Transform).</strong> Pull raw, messy data from all company sources and instantly dump it into a cloud data pool (Amazon S3, Google Cloud Storage, Snowflake) in its native, raw state — JSON, Parquet, CSV, no changes made. When analysts or AI models need the data, distributed compute engines (Apache Spark, dbt) transform and clean it inside the storage destination itself, on demand.</p>
 <table class="caption-top table">
 <colgroup>
@@ -774,10 +774,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="lab-build-a-local-mini-lakehouse-using-delta-lake" class="level2">
 <h2 class="anchored" data-anchor-id="lab-build-a-local-mini-lakehouse-using-delta-lake">Lab: build a local mini-lakehouse using Delta Lake</h2>
 <p>The <a href="../L01/Day1_Lab.html">Day 1 lab notebook</a> simulates a production environment using Apache Spark (via PySpark) and Delta Lake, demonstrating every concept above end to end: ACID transactions, schema enforcement, <code>MERGE</code>, <code>OPTIMIZE</code>/<code>Z-ORDER</code>, <code>VACUUM</code>, Time Travel, and schema evolution — on a real, executed run.</p>
+<p><strong>Requirements.</strong> Delta Lake requires PySpark; the lab also installs <code>delta-spark</code>, which hooks the Delta engine into the Spark session:</p>
+<pre><code>pyspark==3.5.0
+delta-spark==3.5.0</code></pre>
+<p><strong>The implementation.</strong> The notebook initializes a local Spark session configured with Delta Lake, creates a mock e-commerce transaction dataset, then walks through the mechanics covered above on that real data: it enforces schema on write, runs updates securely, and rolls the table back using Time Travel.</p>
 <p>What to look for in the output:</p>
 <ul>
 <li>The Delta Lake engine automatically catches a malicious schema deviation and causes a controlled crash, demonstrating how it prevents your production Data Lake from degrading into a disorganized “data swamp.”</li>
-<li>The history ledger maps out exact version numbers, timestamps, and operations (<code>WRITE</code> / <code>APPEND</code>), showing how easy it is to perform point-in-time rollbacks for auditing or ML reproducibility.</li>
+<li>The history ledger maps out exact version numbers — version 0 for the initial write, version 1 for the follow-up append — along with timestamps and operations (<code>WRITE</code> / <code>APPEND</code>), showing how easy it is to perform point-in-time rollbacks for auditing or ML reproducibility.</li>
 </ul>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">

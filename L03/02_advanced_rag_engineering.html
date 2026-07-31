@@ -800,7 +800,18 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p>Recursive chunking keeps a paragraph attached to its section, and a sentence to its paragraph, so the system can store parent-child relationships — but it requires actually parsing the document’s headings. Semantic chunking is the most content-aware of the four: it detects where meaning shifts by comparing the embeddings of consecutive sentence windows, splitting only where similarity drops — at the cost of running an embedding model during indexing, not just at query time.</p>
+<p><strong>Fixed-size</strong>, concretely: splitting <code>"The quick brown fox jumps over the lazy dog. The dog barks."</code> at a rigid 15 characters produces <code>"The quick brown"</code>, <code>" fox jumps ove"</code>, <code>"r the lazy dog."</code>, <code>" The dog barks."</code> — note the second and third chunks each cut a word in half. It’s trivial to implement and gives predictable, uniform chunk sizes (a typical parameter choice is 512 tokens with 50 tokens of overlap), which is exactly why it works fine for homogeneous text like news articles or log files — but overlap only patches the symptom, it doesn’t fix the underlying loss of semantic boundaries.</p>
+<p><strong>Sentence-based</strong>, concretely: <code>"The quick brown fox jumps. The lazy dog sleeps. The cat watches."</code> splits cleanly into three chunks, one per sentence. This is easy to implement with NLP libraries like NLTK or spaCy and preserves grammatical units, but individual sentences can be too short to carry context on their own, and naive splitting has no protection against breaking on a period inside an abbreviation like “Dr.&nbsp;Smith.”</p>
+<p><strong>Recursive / hierarchical</strong>, concretely: the splitter first checks whether the whole document fits the target size; if not, it descends one level and retries on each piece, e.g.:</p>
+<pre><code>Document
+  ├── Section 1 (too large)
+  │     ├── Paragraph 1 (good size) → keep
+  │     └── Paragraph 2 (still too large)
+  │           ├── Sentence 1 → keep
+  │           └── Sentence 2 → keep
+  └── Section 2 (good size) → keep</code></pre>
+<p>Recursive chunking keeps a paragraph attached to its section, and a sentence to its paragraph, so the system can store parent-child relationships — but it requires actually parsing the document’s headings. A related, simpler variant — <strong>recursive character chunking</strong> — looks for structural markers in order (paragraph breaks <code>\n\n</code>, then sentence-ending punctuation, then whitespace) and splits at the highest-priority marker that keeps chunks near the target size; it respects natural text boundaries well for markdown files, blog posts, and essays, but can still separate a chart or table from the paragraph that explains it.</p>
+<p><strong>Semantic</strong> is the most content-aware of the four: it detects where meaning shifts by comparing the embeddings of consecutive sentence windows, splitting only where similarity drops. Concretely, over five sentences <code>S1..S5</code>, embed each 3-sentence sliding window — Window A = <code>(S1,S2,S3)</code> → vector <code>V1</code>, Window B = <code>(S2,S3,S4)</code> → vector <code>V2</code>, Window C = <code>(S3,S4,S5)</code> → vector <code>V3</code> — and if <code>similarity(V1, V2)</code> stays high but <code>similarity(V2, V3)</code> drops sharply, that’s a topic shift, so the chunker splits between <code>S3</code> and <code>S4</code>. This finds natural topic boundaries that structural splitting can’t see, at the cost of running an embedding model during indexing, not just at query time.</p>
 <section id="chunk-overlap" class="level3">
 <h3 class="anchored" data-anchor-id="chunk-overlap">Chunk overlap</h3>
 <p>Regardless of strategy, chunks should almost always overlap — chunk 2 repeats the last few tokens of chunk 1:</p>

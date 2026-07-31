@@ -576,6 +576,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>Data observability and monitoring is the practice of continuously tracking, analyzing, and validating data systems so that data stays healthy, reliable, accurate, and available — the goal is to catch data problems early enough to fix them before they affect business operations or an AI system downstream, not after. In practice that discipline chases five concrete goals: detect data failures, improve data reliability, keep pipelines under continuous monitoring, ensure data quality, and prevent broken dashboards and AI errors from ever reaching a stakeholder.</p>
 <section id="monitoring-tells-you-something-broke-observability-tells-you-why" class="level2">
 <h2 class="anchored" data-anchor-id="monitoring-tells-you-something-broke-observability-tells-you-why">Monitoring tells you something broke; observability tells you why</h2>
 <p>In the early days of data architecture, engineers relied on basic software monitoring: write a strict rule (“alert me if the server crashes, or if the ETL job throws a 500”). That works for infrastructure failures. But as data systems grew into massive streaming pipelines feeding live AI models and executive dashboards, a new failure mode appeared: <strong>silent data corruption</strong> — the pipeline runs perfectly, no code crashes, and the data inside it is simply wrong.</p>

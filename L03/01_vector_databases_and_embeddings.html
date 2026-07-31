@@ -513,6 +513,7 @@ ul.task-list li input[type="checkbox"] {
   <ul class="collapse">
   <li><a href="#how-the-search-actually-runs-in-three-steps" id="toc-how-the-search-actually-runs-in-three-steps" class="nav-link" data-scroll-target="#how-the-search-actually-runs-in-three-steps">How the search actually runs, in three steps</a></li>
   <li><a href="#distance-metrics" id="toc-distance-metrics" class="nav-link" data-scroll-target="#distance-metrics">Distance metrics</a></li>
+  <li><a href="#a-concrete-worked-example" id="toc-a-concrete-worked-example" class="nav-link" data-scroll-target="#a-concrete-worked-example">A concrete worked example</a></li>
   <li><a href="#why-this-matters" id="toc-why-this-matters" class="nav-link" data-scroll-target="#why-this-matters">Why this matters</a></li>
   </ul></li>
   <li><a href="#document-indexing-two-different-layers" id="toc-document-indexing-two-different-layers" class="nav-link" data-scroll-target="#document-indexing-two-different-layers">Document indexing: two different layers</a>
@@ -620,6 +621,37 @@ ul.task-list li input[type="checkbox"] {
 </tbody>
 </table>
 <p>Cosine similarity is the default for text: it ranges from −1 (opposite meaning) to +1 (identical meaning), and two vectors pointing the same direction score as highly similar even if one document is much longer than the other.</p>
+</section>
+<section id="a-concrete-worked-example" class="level3">
+<h3 class="anchored" data-anchor-id="a-concrete-worked-example">A concrete worked example</h3>
+<p>Suppose a vector database stores three sentences, each reduced here to a simplified 3-dimensional embedding for illustration:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>ID</th>
+<th>Text</th>
+<th>Embedding (simplified 3D)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>“The sky is blue”</td>
+<td><code>[0.9, 0.1, 0.2]</code></td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>“Grass is green”</td>
+<td><code>[0.1, 0.9, 0.1]</code></td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>“The ocean is deep”</td>
+<td><code>[0.8, 0.2, 0.3]</code></td>
+</tr>
+</tbody>
+</table>
+<p>A query about the sky would embed close to <code>[0.9, 0.1, 0.2]</code>, land nearest to sentence 1, and land second-nearest to sentence 3 — “the ocean is deep” — not because the words overlap, but because both sentences describe a similarly-colored, similarly-toned natural scene. Sentence 2 sits far away in this tiny 3D space, exactly like “grass is green” is a different topic. Real embedding models don’t use 3 dimensions — they typically use hundreds — but the geometry works identically at scale.</p>
 </section>
 <section id="why-this-matters" class="level3">
 <h3 class="anchored" data-anchor-id="why-this-matters">Why this matters</h3>
@@ -735,9 +767,11 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="semantic-search-and-similarity-search" class="level2">
 <h2 class="anchored" data-anchor-id="semantic-search-and-similarity-search">Semantic search and similarity search</h2>
-<p><strong>Keyword search</strong> — the traditional approach — matches exact words or substrings: <code>LIKE</code> clauses, inverted indexes, boolean logic. Search for “canine therapy” on a site whose articles only say “dog healing,” and you get zero results, even though the content is exactly what you wanted. Keyword search is blind to meaning: it misses synonyms (“automobile” vs.&nbsp;“car”), misses context (is “Jaguar” an animal, a car, or an OS?), and breaks on polysemy — one word, many meanings.</p>
+<p><strong>Keyword search</strong> — the traditional approach — matches exact words or substrings: <code>LIKE</code> clauses, inverted indexes, boolean logic. A query for “car” retrieves only documents containing the literal string “car.” Search for “canine therapy” on a site whose articles only say “dog healing,” and you get zero results, even though the content is exactly what you wanted. Keyword search is blind to meaning: it misses synonyms (“automobile” vs.&nbsp;“car”), misses context (is “Jaguar” an animal, a car, or an OS?), word order matters in brittle ways, and it breaks on polysemy — one word, many meanings.</p>
 <p><strong>Semantic search</strong> understands the <em>intent</em> behind a query rather than its literal words. “Ways to calm a nervous dog” retrieves documents about “reducing canine anxiety” or “soothing an agitated pet” even though none of those exact words match. It handles synonyms, concept matching (“cold weather” ↔︎ “winter conditions”), and phrasing variation (“How do I…” ↔︎ “What is the method for…”). Semantic search is conceptual: it maps queries and documents into a shared meaning space.</p>
-<p><strong>Similarity search</strong> is the mathematical engine underneath semantic search — not a linguistic operation at all, but a geometric one: given a target vector, find every stored vector close to it by some distance metric. A useful non-text analogy: imagine a room of people, each with an age and a height. Ask “find people similar to Alice” and a keyword match fails outright (no one else is named Alice), but plotting age against height and measuring distance immediately shows that Bob (26, 162cm) is close to Alice (25, 160cm) while Carol (45, 170cm) is far. Vector databases do exactly this, just across hundreds of dimensions instead of two.</p>
+<p><strong>Similarity search</strong> is the mathematical engine underneath semantic search — not a linguistic operation at all, but a geometric one: given a target vector, find every stored vector close to it by some distance metric. A useful non-text analogy: imagine a room of people, each with an age and a height — Alice (25, 160cm), Bob (26, 162cm), Carol (45, 170cm), Dave (46, 172cm). Ask “find people similar to Alice” and a keyword match fails outright (no one else is named Alice), but plotting age against height and measuring distance immediately shows that Bob is close to Alice, while Carol and Dave — close to <em>each other</em> but far from Alice — are not similar to her. Vector databases do exactly this, just across hundreds of dimensions instead of two.</p>
+<p>Concretely, this runs in three steps. First, <strong>embedding</strong>: both the query and every stored document are converted into vectors with the same embedding model — e.g., the query “happy dog” might embed as <code>[0.9, 0.1, 0.8]</code>, a document “joyful puppy” as <code>[0.88, 0.12, 0.79]</code> (very close), and a document “sad cat” as <code>[0.2, 0.9, 0.1]</code> (far away). Second, <strong>distance calculation</strong>: pick a metric — cosine similarity, Euclidean distance, or dot product (see the table above) — and score every stored vector against the query vector. Third, <strong>nearest-neighbor search</strong>: find the top-<em>k</em> stored vectors with the highest similarity. A brute-force search compares the query against every single stored vector — accurate, but too slow once there are millions of them — so in practice vector databases use <strong>Approximate Nearest Neighbor (ANN)</strong> indexing (HNSW, IVF) to find “good enough” neighbors in milliseconds instead.</p>
+<p>For example, a user searching “steps to fix a flat tire” shows the gap directly:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -759,8 +793,8 @@ ul.task-list li input[type="checkbox"] {
 </tr>
 <tr class="even">
 <td>What it finds</td>
-<td>Only documents containing the exact words</td>
-<td>Documents using different words for the same concept</td>
+<td>Only documents containing the exact words “fix,” “flat,” and “tire”</td>
+<td>Documents about “changing a punctured wheel” or “replacing a blown tire,” even without those exact words</td>
 </tr>
 <tr class="odd">
 <td>Flaw</td>
