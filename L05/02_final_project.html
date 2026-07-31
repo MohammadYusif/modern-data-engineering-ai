@@ -738,7 +738,43 @@ Note
 </section>
 <section id="framing-your-submission" class="level2">
 <h2 class="anchored" data-anchor-id="framing-your-submission">Framing your submission</h2>
-<p>The deck also sketches four illustrative real-world scenarios this same five-layer pattern maps onto — a real-time customer-support intelligence platform, a healthcare clinical-trial matcher, an academic research aggregator with a citation graph, and an e-commerce product Q&amp;A system. Your team isn’t required to build one of these specifically; the actual deliverable is the checklist above applied to the starter’s e-commerce order dataset. But if your README benefits from a concrete “who would use this and why,” picking one of these framings for your write-up is a reasonable way to motivate the architecture you built, without changing what’s graded.</p>
+<p>The deck also sketches four illustrative real-world scenarios this same five-layer pattern maps onto. Your team isn’t required to build one of these specifically — the actual deliverable is the checklist above applied to the starter’s e-commerce order dataset — but if your README benefits from a concrete “who would use this and why,” picking one of these framings (and its named integrations, as a hint at what “production-grade” looks like for that domain) is a reasonable way to motivate the architecture you built, without changing what’s graded.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Idea</th>
+<th>Description</th>
+<th>Key integrations</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1. Real-time customer support intelligence</td>
+<td>Ingest live support tickets, chat transcripts, and knowledge-base articles through streaming pipelines; quality-gate for low-quality responses and contradictions; auto-update vector indexes; give agents real-time answer suggestions with citation tracking.</td>
+<td>Flink streaming, Great Expectations validation, Qdrant, hybrid search, cross-encoder reranking, audit logging</td>
+</tr>
+<tr class="even">
+<td>2. Healthcare clinical-trial matcher</td>
+<td>Ingest clinical trial data from CT.gov, PubMed, and internal databases through validated pipelines; apply HIPAA governance (no PHI in the vector DB); let researchers query matching trials with evidence trails and contradiction alerts.</td>
+<td>Spark batch processing, FHIR validation, ClinicalBERT embeddings, Qdrant with HIPAA config, cross-encoder reranking, per-query audit trail</td>
+</tr>
+<tr class="odd">
+<td>3. Academic research aggregator with citation network</td>
+<td>Ingest papers from arXiv, PubMed, and university repositories; build a real-time citation graph where each chunk knows its references; flag retracted papers; answer with citation networks via GraphRAG.</td>
+<td>Argo workflows, a graph + vector DB (Neo4j + Milvus), GraphRAG, citation-based reranking, retraction detection, license-compliance governance</td>
+</tr>
+<tr class="even">
+<td>4. E-commerce real-time product Q&amp;A</td>
+<td>Ingest product catalogs, reviews, and support tickets via CDC from production databases; filter spam and detect sentiment; auto-update vector indexes within seconds of a product change; answer with live inventory awareness.</td>
+<td>Debezium (PostgreSQL CDC), Feast feature store, Qdrant, hybrid search + exact product-code match, LLM with tool use, customer PII governance</td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="setup-and-running" class="level2">
 <h2 class="anchored" data-anchor-id="setup-and-running">Setup and running</h2>

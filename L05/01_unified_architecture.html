@@ -516,6 +516,7 @@ ul.task-list li input[type="checkbox"] {
   <ul class="collapse">
   <li><a href="#workflow-orchestration-the-dag" id="toc-workflow-orchestration-the-dag" class="nav-link" data-scroll-target="#workflow-orchestration-the-dag">Workflow orchestration: the DAG</a></li>
   <li><a href="#beyond-workflows-the-other-orchestration-layers" id="toc-beyond-workflows-the-other-orchestration-layers" class="nav-link" data-scroll-target="#beyond-workflows-the-other-orchestration-layers">Beyond workflows: the other orchestration layers</a></li>
+  <li><a href="#why-ai-infrastructure-orchestration-isnt-just-devops-with-a-new-name" id="toc-why-ai-infrastructure-orchestration-isnt-just-devops-with-a-new-name" class="nav-link" data-scroll-target="#why-ai-infrastructure-orchestration-isnt-just-devops-with-a-new-name">Why AI infrastructure orchestration isn’t just DevOps with a new name</a></li>
   </ul></li>
   <li><a href="#why-integration-is-the-point" id="toc-why-integration-is-the-point" class="nav-link" data-scroll-target="#why-integration-is-the-point">Why integration is the point</a></li>
   </ul>
@@ -751,6 +752,42 @@ ul.task-list li input[type="checkbox"] {
 </tbody>
 </table>
 <p>Without this coordination, the failure modes are concrete: a GPU training job starves a vector DB of latency budget, an embedding job starts before its upstream chunks are ready, scaling requires slow manual provisioning, one pipeline failure takes down the whole system instead of retrying in isolation, and a version upgrade breaks consumers mid-pipeline instead of rolling out as a canary. Orchestration exists specifically to turn each of those into an automated, recoverable non-event.</p>
+</section>
+<section id="why-ai-infrastructure-orchestration-isnt-just-devops-with-a-new-name" class="level3">
+<h3 class="anchored" data-anchor-id="why-ai-infrastructure-orchestration-isnt-just-devops-with-a-new-name">Why AI infrastructure orchestration isn’t just DevOps with a new name</h3>
+<p>Managing an AI architecture means discarding some traditional DevOps assumptions outright, not just adding a few extra tools:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Architectural metric</th>
+<th>Traditional software orchestration</th>
+<th>AI infrastructure orchestration</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Primary resource tracked</td>
+<td>CPU core count and RAM utilization</td>
+<td>GPU/TPU VRAM, High-Bandwidth Memory (HBM), and interconnect speed (NVLink)</td>
+</tr>
+<tr class="even">
+<td>Scaling trigger</td>
+<td>Web traffic or API request spikes</td>
+<td>Context size, token generation speed, batch sizes</td>
+</tr>
+<tr class="odd">
+<td>Data dependencies</td>
+<td>Static application code packages loaded from standard storage</td>
+<td>Multi-gigabyte model weight tensors and dynamic vector-embedding caches</td>
+</tr>
+</tbody>
+</table>
+<p>The underlying reason: a traditional web service scales by adding identical, stateless replicas — more RAM and CPU cores solve most problems. An LLM-serving or embedding workload is neither identical nor stateless in the same sense — a single model’s weights can be tens of gigabytes, live entirely in GPU memory, and its actual throughput is bound by how fast tokens stream out, not by how many requests are queued. Orchestration tools built for the first world (classic Kubernetes autoscaling on CPU%) don’t know how to reason about the second — which is exactly why the GPU/model-aware tools in the table above (Kueue, Karpenter, vLLM, Ray Serve) exist as a separate layer rather than just “more Kubernetes.”</p>
 </section>
 </section>
 <section id="why-integration-is-the-point" class="level2">
