@@ -1,0 +1,161 @@
+---
+title: "Lineage and Data Observability"
+format: html
+---
+
+## Monitoring tells you something broke; observability tells you why
+
+In the early days of data architecture, engineers relied on basic software
+monitoring: write a strict rule ("alert me if the server crashes, or if the
+ETL job throws a 500"). That works for infrastructure failures. But as data
+systems grew into massive streaming pipelines feeding live AI models and
+executive dashboards, a new failure mode appeared: **silent data
+corruption** — the pipeline runs perfectly, no code crashes, and the data
+inside it is simply wrong.
+
+- **Data monitoring (the "what")** is reactive and rule-based. It checks
+  infrastructure for known errors: is the database online? Did the Airflow
+  DAG complete? Is latency under 200ms? It tells you *when something broke*.
+- **Data observability (the "why")** is proactive and inferred. It analyzes
+  the actual data flowing through the system to detect "unknown unknowns":
+  why did average purchase value suddenly drop 90% today? It helps you trace
+  the root cause of an anomaly monitoring alone would never have flagged.
+
+## The five pillars of data observability
+
+A production-grade observability system (Monte Carlo, Acceldata, Databricks)
+continuously evaluates data health across five dimensions. The first four
+are what you'd expect to check; the fifth — lineage — is different in kind:
+it's the map that gives the other four their context.
+
+```{mermaid}
+graph TD
+    L["Lineage — the end-to-end map"] --> F["Freshness"]
+    L --> V["Volume"]
+    L --> S["Schema"]
+    L --> D["Distribution"]
+```
+
+**1. Freshness (SLA timeliness).** Is the data up to date? If a dashboard
+expects sales updates every 15 minutes but the underlying table hasn't
+refreshed in 4 hours, the observability engine fires a freshness alert
+before an executive notices a stagnant chart.
+
+**2. Volume (completeness check).** Is the scale of incoming data normal? If
+an ingestion pipeline usually sees ~50,000 events/hour and a batch arrives
+with only 2,000 — or spikes to 500,000 — that's flagged as a critical
+anomaly, usually pointing to an upstream API drop or a duplicate load.
+
+**3. Schema (structural changes).** Schema drift is the single biggest
+killer of production applications and RAG systems. If `user_id` gets renamed
+to `customer_uuid`, or a field's type silently changes from integer to
+string, every downstream transformation can break instantly. Observability
+tools continuously diff schemas and alert the moment structure changes.
+
+**4. Distribution (field-level health).** This looks at the statistical
+profile of values inside a table — mean, median, standard deviation,
+null-rate. If `customer_age` normally has a 1% null rate and an upstream
+change suddenly pushes 75% of rows to `NULL`, the pipeline didn't crash, but
+the data flowing through it is completely broken.
+
+**5. Lineage (the map of dependencies).** Lineage is the foundational layer
+that gives the other four pillars context: it builds an end-to-end trace of
+where data originates, how it transforms, and which dashboards or models
+consume it. Without it, freshness/volume/schema/distribution alerts tell you
+*something* is wrong upstream but not what downstream actually depends on
+the broken table.
+
+Common tooling in this space includes Monte Carlo, Datadog, Splunk,
+Microsoft Fabric Monitoring, and IBM's observability suite — all built
+around some combination of these five pillars.
+
+## OpenLineage — lineage as structured events
+
+**OpenLineage** is an open, vendor-neutral standard (a JSON schema published
+on GitHub) for emitting lineage as discrete events rather than a
+hand-maintained diagram.
+
+- **Event types** — `START` when a pipeline run begins, `COMPLETE` on
+  success (with output stats), `FAIL` on error (with the cause).
+- **Payload shape** — `run` (a UUID plus facets), `job` (namespace + name),
+  `inputs` (datasets read), `outputs` (datasets written).
+- **Marquez** is the reference open-source lineage server: it receives these
+  events, stores the resulting graph, and exposes it via a REST API and UI.
+  A pipeline can also just write the events to a local file — no server
+  required — which is what today's lab does.
+
+The integration pattern is deliberately minimal: emit `START` before the
+first read, `COMPLETE` after the final write, and `FAIL` inside the `except`
+block. No changes to the pipeline's actual transformation logic are needed.
+The payoff is **impact analysis** — the lineage graph shows every downstream
+job that reads a given dataset, which is exactly what you need before
+approving a risky schema change.
+
+```python
+# Minimal shape of an OpenLineage RunEvent
+{
+  "eventType": "COMPLETE",
+  "eventTime": "2026-07-31T12:00:00Z",
+  "run":    {"runId": "…uuid…"},
+  "job":    {"namespace": "retail_pipeline", "name": "quality_gate"},
+  "inputs":  [{"namespace": "kaggle", "name": "online_retail_raw.csv"}],
+  "outputs": [{"namespace": "warehouse", "name": "online_retail_clean"}]
+}
+```
+
+## Lab: automated data quality gates on real e-commerce data
+
+The [Day 4 lab notebook](Day4_Lab.ipynb) builds a full quality-gate pipeline
+against the **UCI Online Retail Dataset** — 541,909 real transactions from a
+UK-based online retailer (2010–2011), pulled live from Kaggle. Nothing here
+is synthetic or planted: roughly 25% of `CustomerID`s are genuinely missing,
+cancelled orders carry negative quantities, and formatting is inconsistent —
+exactly the kind of mess a real ingestion boundary has to handle.
+
+The notebook walks through the whole chain from today's lesson, in order:
+
+1. Download and profile the raw CSV, surfacing quality problems before any
+   rule is written.
+2. Enforce a `RetailTransactionContract` (Pydantic v2) at the pipeline
+   boundary — rows with a missing customer ID, non-positive quantity, or
+   malformed invoice number are rejected immediately.
+3. Run a hand-rolled `DataQualityEngine` implementing all six DAMA
+   dimensions against the contract-validated rows.
+4. Run the **same core checks again through a real Great Expectations 1.x
+   checkpoint** — the actual library the capstone rubric names — so you see
+   both the hand-rolled concept and the production tool agree.
+5. Route the batch to `production_warehouse/` or `quarantine_zone/` based on
+   the DAMA verdict.
+6. Emit both a hand-rolled OpenLineage-style JSON trail and **real
+   `openlineage-python` `START`/`COMPLETE`/`FAIL` events**, written to a
+   local file transport (no Marquez server required).
+
+### What to look for in the output
+
+- The Pydantic contract alone rejects **144,025 of 541,909 rows (26.6%)** —
+  the large majority for a missing `CustomerID`, the rest for non-positive
+  quantities (cancellations) or zero prices.
+- The DAMA engine, run on the *already contract-clean* 397,884 rows, still
+  **fails** — on uniqueness (5,192 exact duplicate rows) and validity
+  (1,838 `StockCode`s that don't match the expected 5-digit format). This is
+  the point: a data contract catches record-level violations, but it does
+  not catch duplicates or catalog-format drift — that's exactly what a
+  broader quality engine (or Great Expectations) is for.
+- The real Great Expectations checkpoint reports `success=True` on the same
+  contract-validated rows — because its four expectations
+  (`not_be_null`, two `be_between` range checks, and the invoice regex)
+  restate the same rules the Pydantic contract already enforced. It's a
+  useful confirmation that the two layers agree, not an independent catch.
+- Because the DAMA verdict is `FAILED`, the lineage emitters both record a
+  `START` → `FAIL` sequence, and the batch is routed to `quarantine_zone/`
+  rather than `production_warehouse/` — the quality gate actually holding
+  the line, not just logging a warning.
+
+::: {.callout-note}
+Running this notebook end-to-end in Colab requires a free Kaggle account and
+API key (Step 2 — Kaggle Authentication), supplied either as Colab Secrets or
+an uploaded `kaggle.json`. The dataset itself (`carrie1/ecommerce-data`,
+matching the UCI Online Retail Dataset) is public, so some environments can
+fetch it without credentials — but Colab's `kagglehub` calls are written to
+expect the credentials from Step 2 regardless, so don't skip that setup.
+:::

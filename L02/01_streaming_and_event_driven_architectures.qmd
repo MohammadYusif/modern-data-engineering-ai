@@ -1,0 +1,149 @@
+---
+title: "Streaming and Event-Driven Architectures"
+format: html
+---
+
+## From the midnight truck to the moving escalator
+
+Picture a busy online bookstore running on yesterday's architecture: **batch
+processing**. Every click, search, and cart addition during the day gets
+written to a holding area and left untouched. Nothing happens to it until
+midnight, when an automated job bundles the entire day's activity into one
+enormous file, ships it off to be processed, and — by 2 a.m. — the dashboards
+and inventory counts finally catch up to reality.
+
+That works fine for a monthly financial audit. It fails badly the moment the
+business needs to react *during* the day. If a book goes viral on social media
+at 8 a.m. and sells out by 9, the inventory system won't know it's gone until
+the midnight batch runs — the store spends the rest of the day selling a book
+it doesn't have. Batch processing has two structural flaws: insights are
+always stale (by definition, historical), and cramming 24 hours of computation
+into one nightly window strains the infrastructure right when it runs.
+
+**Streaming** replaces the midnight truck with a moving escalator. The instant
+a customer buys a book, that action becomes an individual, self-contained
+**event** — placed directly onto the escalator instead of a holding pen.
+Processing engines on the other side read, clean, and analyze each event
+within milliseconds of it happening. Data is never allowed to sit idle.
+
+| | Batch processing | Streaming |
+|---|---|---|
+| Data unit | A large, bounded file with a clear start and end | An individual, unbounded event |
+| Latency | Hours (the next scheduled run) | Milliseconds |
+| Compute pattern | One heavy burst, usually overnight | Continuous, spread evenly over time |
+| Best for | Historical reports, monthly audits, model retraining | Fraud detection, live personalization, operational alerting |
+| Failure mode | A viral spike goes unnoticed for hours | A single malformed event can be isolated without stopping the flow |
+
+## The architecture: producers, broker, stream processor
+
+Moving beyond batches means building an **event-driven pipeline** out of three
+layers that never talk to each other directly:
+
+```{mermaid}
+graph LR
+    P["Producers<br>apps, sensors, GPS trackers"] --> B["Streaming Broker<br>Kafka / Redpanda"]
+    B --> S["Stream Processor<br>Flink / Spark Structured Streaming"]
+    S --> D["Downstream sinks<br>Delta Lake, dashboards, AI models"]
+```
+
+- **Producers** are whatever generates the live data — a mobile app tap, a
+  factory sensor, a GPS ping. The instant something happens, the producer
+  broadcasts it; it doesn't wait for anyone to be listening.
+- **The streaming broker** is the central station built to absorb millions of
+  simultaneous events without falling over. Tools like **Apache Kafka** or
+  **Redpanda** act as an immutable, ordered logbook: events are caught in the
+  exact order they arrived and held safely in line until a consumer reads
+  them.
+- **The stream processor** — Apache Flink, or Spark Structured Streaming —
+  sits actively over the moving feed and computes on the fly. It never asks
+  "what was yesterday's revenue?"; it continuously maintains the answer to
+  "what is revenue as of this exact second?"
+
+### Why this matters
+
+- **Ride-hailing (Uber/Careem).** If ETA and fare calculation ran as a nightly
+  batch, the app would be useless. Instead, your phone streams location
+  continuously; the broker catches it, and a stream processor recomputes your
+  ETA every second.
+- **Financial fraud detection.** A batch system discovers a stolen card hours
+  after the fact. A streaming system consumes the swipe event, scores it for
+  anomalies, and can freeze the account before the transaction even clears.
+- **Instant personalization.** Streaming pipelines feed live clicks directly
+  into recommendation models — click on three football clips and your next
+  scroll already reflects it, instead of waiting for tomorrow's batch job.
+
+In short, moving beyond batches shifts infrastructure from a *reactive* state
+(analyzing history) to an *active* one (reacting to the present).
+
+## Event-driven architectures for AI systems
+
+Traditional software mostly talks in **synchronous request-response** —
+standard REST APIs. Component A calls an AI service and sits completely idle,
+blocking a thread, until the model finishes computing an answer. That model
+worked fine when "the AI service" was a fast lookup. It breaks down once AI
+workloads mean heavy LLM inference, multi-agent orchestration, and continuous
+streaming data — request-response buckles under the combined weight of high
+latency and tight coupling between services.
+
+An **Event-Driven Architecture (EDA)** flips the paradigm: instead of issuing
+direct commands, components publish and consume **events** — structured
+records stating that something happened — through a central broker. Nothing
+blocks. Producers fire an event and move on; consumers, including AI models,
+process it whenever they're ready, and can scale independently based on how
+deep the backlog gets.
+
+| Design dimension | Traditional request-response (REST) | Event-driven architecture (EDA) |
+|---|---|---|
+| Handling LLM latency | Poor — a connection stays open for seconds/minutes during inference, risking timeouts and wasted compute | Excellent — the task is accepted instantly; inference happens asynchronously in the background |
+| System coupling | Tight — if the LLM provider goes down, the calling app crashes immediately | Loose — the broker holds messages safely until the AI service is back |
+| Resource scaling | Rigid — hard to scale compute dynamically for bursty query traffic | Elastic — a growing queue can trigger extra worker containers on demand |
+| Extensibility | Hard — a new feature means editing the core application | Easy — hook a new consumer onto the existing broker topic, no other code touched |
+
+### Core architectural components
+
+An event-driven AI system relies on four structural layers:
+
+1. **Event producers** — applications, users, or databases that capture an
+   action (a chat message, a file upload) and broadcast it as a structured
+   event.
+2. **The event broker** — the high-throughput backbone (Kafka, Redpanda) that
+   receives, orders, and durably stores events without losing any.
+3. **AI event consumers** — independent workers that listen on specific
+   topics, run AI processing (embeddings, LLM inference) on each event, and
+   emit new event payloads downstream.
+4. **Downstream storage sinks and output gateways** — where processed AI
+   output lands: a Delta Lake table, a vector database, or a live push back to
+   a user interface.
+
+A minimal version of this pattern — a broker built from nothing more than
+`asyncio.Queue` per topic, a producer that never blocks on the consumer, and
+an AI-processing consumer reading off it — looks like this:
+
+```python
+class MockEventBroker:
+    def __init__(self):
+        self.topics = {
+            "raw_support_queries": asyncio.Queue(),
+            "processed_embeddings": asyncio.Queue(),
+        }
+
+    async def publish(self, topic, message):
+        await self.topics[topic].put(message)
+
+    async def consume(self, topic):
+        return await self.topics[topic].get()
+```
+
+The producer calls `publish()` and immediately goes back to work — it never
+waits to see what the embedding or inference consumer does with the message.
+That decoupling is the entire point: swap the `asyncio.Queue` for a real Kafka
+topic and the architecture doesn't change, only the durability and throughput
+guarantees do. The lab's `MockKafkaBroker` (in
+[Day2_Lab.ipynb](Day2_Lab.ipynb)) builds on exactly this idea, adding
+partitions and offsets to mirror real Kafka's semantics.
+
+In short: an event-driven architecture lets independent AI components —
+producers, embedding workers, inference agents — communicate by publishing
+and reacting to events instead of waiting idly on each other, which is what
+lets a production system absorb slow, unpredictable LLM latency without
+tipping over.

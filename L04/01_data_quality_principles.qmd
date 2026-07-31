@@ -1,0 +1,135 @@
+---
+title: "Data Quality: Principles, Validation, and Contracts"
+format: html
+---
+
+## Garbage in, garbage out
+
+Computer science has one law that no amount of model size fixes: **garbage
+in, garbage out.** You can deploy the most advanced, billion-parameter LLM in
+the world, but if you feed it corrupted, incomplete, or outdated data, it
+will confidently produce nonsense — just very fluent nonsense. This is why
+production-grade data teams don't treat data quality as a one-time cleaning
+pass; they build **validation frameworks** that check every batch, every
+time, before it reaches a model or a dashboard.
+
+## The six DAMA dimensions of data quality
+
+When data engineers ask "is this dataset healthy enough to use?", they don't
+guess — they measure it against six standard dimensions, formalized by the
+DAMA (Data Management Association) data quality framework.
+
+| Dimension | What it means | The real-world risk |
+|---|---|---|
+| **Accuracy** | Data correctly represents real-world ground truth, free of typos or sensor error. | A transposed digit shifts an invoice from \$10,000 to \$100,000. |
+| **Completeness** | No critical gaps, missing structural values, or unexpected `NULL`s. | An AI computes average customer lifetime value while half the history rows are blank. |
+| **Consistency** | The same entity has the same value everywhere it appears. | One system stores `"USA"`, another stores `"United States"` — the model treats them as two different countries. |
+| **Timeliness / Freshness** | Data is current and reflects the real state of operations. | A fraud-detection model trains on three-year-old buying patterns and misses modern attack vectors. |
+| **Validity** | Values conform to defined business rules, schemas, and ranges. | A column tracking human age contains `-5` or `999`. |
+| **Uniqueness** | Every record exists exactly once, no redundant duplicates. | Duplicate customer rows skew training statistics, forcing a model to over-index on repeated behavior. |
+
+In short: quality principles describe *what "good" looks like*; validation
+techniques (next section) are *how you actually check for it*.
+
+### From principle to query
+
+Each dimension above has a direct, checkable implementation:
+
+- **Completeness** — percentage of non-null values in a critical field. A
+  missing `customer_id` breaks revenue attribution entirely.
+- **Accuracy** — cross-referencing against an authoritative source (does the
+  value match the CRM or ERP record?).
+- **Consistency** — the same entity must carry the same value across every
+  system it appears in (an address in the CRM must match the one in the
+  warehouse).
+- **Timeliness** — data must land within an agreed SLA window; late
+  financial data can miss a settlement cutoff entirely.
+- **Uniqueness** — detected with a simple ratio check:
+  `COUNT(*)` vs `COUNT(DISTINCT id)`. Any gap between the two is duplicates.
+- **Validity** — domain checks such as `quantity > 0` or
+  `country_code IN ISO 3166-1 alpha-2`.
+
+This is exactly the shape of engine you'll build in today's lab: six methods,
+one per dimension, each returning a pass/fail verdict plus a human-readable
+reason.
+
+## Validation techniques
+
+These are the concrete, reusable mechanisms that implement the dimensions
+above at the code level:
+
+- **Schema validation** — does the record have the right fields, in the
+  right types?
+- **Type validation** — is `quantity` actually numeric, not a string that
+  happens to look numeric?
+- **Range validation** — does `price` fall within a sane business range?
+- **Null / missing value checks** — are required fields actually populated?
+- **Duplicate detection** — does a natural or primary key repeat?
+- **Pattern validation** — does a field match an expected format, such as an
+  email regex or an invoice-number pattern?
+- **Consistency validation** — does the same entity agree with itself across
+  tables or systems?
+
+Individually these are simple checks. The engineering discipline is applying
+all of them, consistently, at the *boundary* of the pipeline — which is
+exactly what a data contract formalizes.
+
+## Data contracts — formalizing the producer–consumer agreement
+
+A **data contract** is a machine-enforceable schema plus an SLA between the
+system that produces data and the system that consumes it. Instead of a
+producer team silently renaming a column and breaking every downstream job,
+the contract makes the agreement explicit and enforced in code.
+
+Two common ways to implement one:
+
+- **Pydantic v2**, for validating records at the application/pipeline
+  boundary:
+
+  ```python
+  from pydantic import BaseModel, field_validator, ConfigDict
+
+  class OrderContract(BaseModel):
+      model_config = ConfigDict(strict=True)   # '123' stays a string, never silently becomes 123
+
+      order_id: str
+      quantity: float
+      email: str
+
+      @field_validator("email")
+      @classmethod
+      def valid_email(cls, v: str) -> str:
+          if "@" not in v:
+              raise ValueError("malformed email")
+          return v
+  ```
+
+  `strict=True` blocks silent type coercion — a string `'123'` is never
+  quietly promoted to the integer `123`. Custom `@field_validator` methods
+  raise on anything else the schema alone can't express, like a malformed
+  email.
+
+- **dbt contracts**, for enforcing shape at the warehouse/model level:
+  setting `enforced: true` in a model's YAML makes the build itself fail the
+  moment a column's type or name drifts from what's declared — the
+  disagreement is caught at build time, not by a confused analyst three
+  weeks later.
+
+### The violation pipeline
+
+A contract is only useful if violations have a defined path:
+
+```
+validate at ingest → quarantine invalid records → alert the producer → block downstream propagation
+```
+
+Nothing invalid is silently dropped, and nothing invalid is silently allowed
+through either — it's set aside, visibly, with the producer notified.
+Breaking changes to a contract — removing a column, narrowing a type — are
+treated as major-version changes, with a migration window for consumers
+before the old shape is retired.
+
+The lab notebook builds exactly this: a `RetailTransactionContract` Pydantic
+model that rejects any record with a missing customer ID, a non-positive
+quantity, or a malformed invoice number, before the DAMA quality engine ever
+sees it.

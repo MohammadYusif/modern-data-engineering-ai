@@ -1,0 +1,140 @@
+---
+title: "The Final Project"
+format: html
+---
+
+## The assignment
+
+All participants complete this as their final project, in **teams of
+three**. [`Day5_Lab.ipynb`](Day5_Lab.ipynb) is your starter template — a
+five-module pipeline that already runs end to end, on purpose, so you can
+verify your environment before extending it. Your team's actual deliverable
+is to replace its lightweight stand-ins with the real tools from the week.
+
+## What the starter already does
+
+The notebook wires together a DAG of five modules over a synthetic
+e-commerce order stream:
+
+| Module | Stage | What the starter uses |
+|---|---|---|
+| 1 | Ingestion | `MockKafka` — an in-memory producer/topic/offset simulator |
+| 2 | Storage | Bronze / Silver / Gold Lakehouse, written with pandas + Parquet |
+| 3 | Quality Gate | Five hand-rolled DAMA-style checks (completeness, accuracy, uniqueness, validity, timeliness) |
+| 4 | Serving | A RAG pipeline over the Gold layer, using an in-memory ChromaDB collection and `sentence-transformers` |
+| 5 | Orchestration | A DAG executor that runs modules 1–4 in dependency order and emits JSON lineage events |
+
+It's deliberately built from lightweight stand-ins — `MockKafka` instead of a
+real broker, pandas/Parquet instead of Delta Lake, hand-rolled checks instead
+of Great Expectations — so it runs anywhere with no external services and
+you can confirm your environment works before touching real infrastructure.
+
+## What's actually graded: the extension checklist
+
+Your team's job is to replace each stand-in with the real library you
+already used earlier in the week. This checklist is also printed at the end
+of every run of the notebook:
+
+| Replace | With | Reference implementation |
+|---|---|---|
+| `MockKafka` | a real `kafka-python` producer/consumer | Day 2's Kafka lab |
+| pandas Parquet writes | PySpark + Delta Lake | Day 1's Delta Lake lab |
+| the five manual checks | Great Expectations checkpoints | Day 4's quality gate lab |
+| `chromadb.Client()` (in-memory) | a persistent Chroma instance or Pinecone | Day 3's RAG lab |
+| `module5_orchestrate()`'s task calls | tasks wrapped in a real Airflow DAG | [Orchestrating the platform](01_unified_architecture.qmd#orchestrating-the-platform) |
+| — (new) | an OpenLineage HTTP emitter pointing at a Marquez server | Day 4's lineage lab |
+| — (new) | a recorded 10-minute demo covering all five modules | — |
+
+If your team gets stuck on any single item, that day's lab notebook has a
+working reference call for the real library — the starter's mock exists
+specifically so you can see the *shape* of what needs replacing before you
+go find the real API.
+
+## Deliverables and rubric
+
+| Deliverable | Requirement | Points |
+|---|---|---|
+| 1. Ingestion layer | Kafka producer + consumer with schema validation | 20 |
+| 2. Delta Lakehouse | Bronze/Silver/Gold zones with `MERGE` and schema enforcement | 25 |
+| 3. RAG pipeline | Chunking, embedding, vector index, hybrid search with reranking | 25 |
+| 4. Orchestration | Airflow DAG connecting all modules end-to-end | 15 |
+| 5. Quality gate | Great Expectations suite + OpenLineage events emitted | 15 |
+| **Total** | | **100** |
+
+Submission is a GitHub repository with a README documenting the
+architecture and how to run it.
+
+::: {.callout-note}
+This mirrors the course's standing capstone rubric exactly (100 points,
+ingestion / lakehouse / RAG / orchestration / quality-and-lineage), because
+Day 5's final project **is** the capstone submission for this course — not a
+separate practice exercise.
+:::
+
+## Framing your submission
+
+The deck also sketches four illustrative real-world scenarios this same
+five-layer pattern maps onto — a real-time customer-support intelligence
+platform, a healthcare clinical-trial matcher, an academic research
+aggregator with a citation graph, and an e-commerce product Q&A system. Your
+team isn't required to build one of these specifically; the actual deliverable
+is the checklist above applied to the starter's e-commerce order dataset. But
+if your README benefits from a concrete "who would use this and why," picking
+one of these framings for your write-up is a reasonable way to motivate the
+architecture you built, without changing what's graded.
+
+## Setup and running
+
+```bash
+pip install -r requirements.txt
+```
+
+Only install the extension dependencies for the specific real tools your
+team is integrating (Kafka, Delta Lake, Great Expectations, Airflow, etc.) —
+you don't need all of them at once to get started. Open
+[`Day5_Lab.ipynb`](Day5_Lab.ipynb) and run all cells top to bottom; the first
+code cell installs the starter's own dependencies via `!pip install`.
+
+Output lands in:
+
+- `./lakehouse/bronze/` — raw ingested records
+- `./lakehouse/silver/` — cleansed, validated records
+- `./lakehouse/gold/` — revenue aggregation by country
+- `./lineage_events/` — the pipeline's JSON audit trail
+
+::: {.callout-note}
+Module 4's `SentenceTransformerEmbeddingFunction` downloads the
+`all-MiniLM-L6-v2` model from the Hugging Face Hub the first time it runs —
+this needs internet access on that first run (in Colab or locally); the
+model is cached afterward and subsequent runs are offline. On Windows, the
+Hugging Face cache also falls back to a non-symlinked copy of the model
+files instead of symlinks, which just uses a little more disk space — it
+does not affect correctness.
+:::
+
+## Standing project requirements — every SDAIA Academy capstone
+
+On top of this course's rubric, every project in every SDAIA Academy program
+must additionally satisfy the following, and it's part of how the project is
+evaluated:
+
+- Every trainee must **create and activate a GitHub account**, if they don't
+  already have one.
+- The project must be **uploaded to GitHub**, kept documented, and
+  continuously updated.
+- The repository must include:
+  - A clear, comprehensive **project description**
+  - A **professional README** — the project idea plus how to run/use it
+  - Proper **technical documentation**
+  - Good **Git version-control practices** — meaningful, incremental
+    commits; a sane repository structure; a `.gitignore` excluding secrets
+    and generated files
+  - A statement of **which training program** the project was completed
+    under (program name and cohort dates)
+  - A link to **SDAIA Academy's GitHub** — <https://github.com/SDAIAAcademy>
+    — where relevant
+
+Encouraged, though not scored: support outstanding Saudi projects on
+GitHub — star high-quality repositories, follow Saudi accounts and
+repositories, contribute to open source, engage via forks, pull requests, and
+issues, and share standout projects with the wider tech community.

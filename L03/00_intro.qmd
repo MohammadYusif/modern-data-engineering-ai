@@ -1,0 +1,45 @@
+---
+title: "Day 3 — Vector Databases and Advanced RAG Engineering"
+format: html
+---
+
+For two days we've focused on getting data to *rest* somewhere reliable — a
+lakehouse table, a stream of validated events. Today we ask a different
+question: once an AI system needs to *reason* over that data, how does it find
+the handful of facts relevant to one specific question, out of millions of
+documents, in milliseconds?
+
+If you've used ChatGPT, Gemini, or any modern AI assistant and wondered how it
+instantly locates the exact sentence or concept you're asking about, the
+answer is a combination of two ideas: **embeddings**, which turn meaning into
+geometry, and **vector databases**, which search that geometry at scale.
+Together they solve the two things a raw large language model is genuinely
+bad at — it forgets (a fixed context window) and it hallucinates (it guesses
+plausibly when it doesn't actually know). **Retrieval-Augmented Generation
+(RAG)** is the architecture that wires a vector database into an LLM so the
+model answers from retrieved, grounded facts instead of from memory alone.
+
+A basic RAG system just chops text into blocks and matches keywords — that's
+enough for a demo, but it breaks down in production: wrong chunks get
+retrieved, exact terms get missed, and the model drowns in irrelevant context.
+Advanced RAG engineering is the set of techniques — hybrid search, reranking,
+smarter chunking and indexing, continuous evaluation — that closes that gap.
+
+## Vector Databases and Advanced RAG Engineering — Day 3
+
+Subtopics for today:
+
+1. Introduction to vector databases and embeddings
+2. Semantic search and similarity search
+3. Architecture of Retrieval-Augmented Generation (RAG)
+4. Chunking strategies and document indexing
+5. Building production-ready RAG pipelines
+6. **Hands-on lab:** building an advanced RAG system — chunking, hybrid
+   search, reranking, and evaluation, over a small knowledge base
+
+Read the lessons —
+[Vector Databases and Embeddings](01_vector_databases_and_embeddings.qmd)
+and
+[Advanced RAG Engineering](02_advanced_rag_engineering.qmd) —
+then work through the [lab notebook](Day3_Lab.ipynb) and the
+[practice exercise](Day3_Exercise.ipynb).

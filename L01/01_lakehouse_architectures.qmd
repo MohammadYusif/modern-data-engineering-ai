@@ -1,0 +1,286 @@
+---
+title: "Warehouses, Lakes, and Lakehouses"
+format: html
+---
+
+## The architectural shift: from warehouses to lakehouses
+
+To understand where we are today, we have to look at how data storage
+evolved. Historically, organizations moved through three distinct eras.
+
+```{mermaid}
+graph LR
+    A["Enterprise Data Warehouse<br>1990s–2010s"] --> B["Data Lake<br>2010s–2020s"]
+    B --> C["Data Lakehouse<br>Present"]
+```
+
+**The Enterprise Data Warehouse (EDW) era (1990s–2010s).** Companies stored
+clean, highly structured data in rigid SQL databases. It was excellent for
+generating basic business reports, but it was incredibly expensive to scale
+and completely incapable of handling unstructured data like audio, video, or
+massive JSON logs.
+
+**The Data Lake era (2010s–2020s).** With the birth of Hadoop and cloud object
+storage (like Amazon S3), companies started dumping everything — raw,
+structured, and unstructured data — into a cheap storage pool. While scalable,
+these lakes lacked control. With no data validation or transactional safety,
+they quickly degraded into disorganized **"data swamps."**
+
+**The Modern Data Lakehouse era (present).** This is the current gold
+standard. A Lakehouse implements a specialized storage layer — open-source
+columnar frameworks like **Delta Lake** or **Apache Iceberg** — directly on
+top of cheap cloud storage. It gives you the best of both worlds: the
+ultra-low cost and flexibility of a Data Lake, combined with the strict
+reliability, schema enforcement, and ACID transactions of a traditional Data
+Warehouse.
+
+## Core architectural principle: decoupling compute from storage
+
+In legacy systems, Compute (the processor that does the heavy lifting,
+calculating, and transforming) and Storage (the hard drives where the raw
+data sits) were physically bundled inside the same server box. If you ran out
+of processing power, you had to buy more storage. If you ran out of storage,
+you had to buy more processors. It was expensive and wasteful.
+
+A modern data architecture completely unties these two components so they can
+live in separate places and scale independently:
+
+- **The storage layer.** All your data — petabytes of text, numbers, images,
+  video — is dumped into an ultra-cheap, infinitely expandable cloud storage
+  "lake" (Amazon S3, Google Cloud Storage). It just sits there safely,
+  requiring almost zero electricity or processing power just to hold the
+  data, so it costs pennies.
+- **The compute layer.** Processing engines (Apache Spark, Databricks) live
+  entirely separately. When a data scientist or an AI model needs to run a
+  massive computation, a cluster of virtual computers instantly wakes up,
+  hooks into the storage layer, pulls the exact data it needs, processes it in
+  parallel, and delivers the answer.
+
+### Why this matters
+
+- **Massive cost savings.** If your company collects data 24/7 but only runs
+  heavy AI models or reports once a week, you don't need thousands of
+  expensive processors sitting idle all week. You pay a tiny fee to store the
+  data, spin up 100 virtual computers for the 2 hours it takes to run your AI
+  models, and then shut them down completely — you pay for compute by the
+  second it actually runs.
+- **Infinite scalability.** If a sudden business need requires analyzing 10
+  years of data by tomorrow morning, you don't buy new hardware — you command
+  500 cloud computers to team up, attack the storage lake simultaneously,
+  finish in minutes, and disappear.
+- **No single point of failure.** Because your data isn't trapped inside the
+  specific computer doing the work, a crashed compute server doesn't lose or
+  corrupt anything. The data is safe in the storage layer, and another
+  compute server can instantly step in.
+
+In short: decoupling compute from storage turns your data infrastructure from
+a rigid, expensive box into a flexible system where storage is your permanent
+memory bank, and compute is a powerful muscle you only flex — and pay for —
+exactly when you need it.
+
+## Data ingestion: the revolution of ELT over ETL
+
+Both ETL and ELT move raw data from its sources (a mobile app, a website, a
+database) into a central storage system where data scientists and AI models
+can use it. The letters stand for:
+
+- **Extract** — gathering the raw data from its source
+- **Load** — sending the data to its destination
+- **Transform** — cleaning, formatting, and preparing the data
+
+The revolution comes down to flipping the order of the last two steps.
+
+**The traditional way — ETL (Extract → Transform → Load).** Because legacy
+database storage was expensive, engineers used a separate middle-tier server
+to clean, aggregate, and shrink the data *before* storing it, then pushed the
+pre-formatted, clean data into a rigid Data Warehouse.
+
+**The modern way — ELT (Extract → Load → Transform).** Pull raw, messy data
+from all company sources and instantly dump it into a cloud data pool (Amazon
+S3, Google Cloud Storage, Snowflake) in its native, raw state — JSON, Parquet,
+CSV, no changes made. When analysts or AI models need the data, distributed
+compute engines (Apache Spark, dbt) transform and clean it inside the storage
+destination itself, on demand.
+
+| Feature | Legacy ETL | Modern ELT |
+|---|---|---|
+| Speed of ingestion | Slow — data waits to be transformed before it can be saved | Ultra-fast — raw data is dumped into storage within seconds |
+| Data preservation | Lossy — raw details are thrown away during transformation | Preserved — 100% of raw historical data is saved forever |
+| Flexibility | Low — changing the pipeline means redesigning the whole system | High — a new format is just a new query against the raw data |
+| Failure recovery | Hard — a mid-pipeline failure can lose or strand data | Easy — raw data stays safe in storage; fix the script and rerun |
+
+In short, the revolution of ELT over ETL is a shift from "clean it before you
+keep it" to "keep it all, and clean it whenever you need it." By leveraging
+cheap cloud storage and massive compute, ELT ensures modern AI systems always
+have access to a rich, uninterrupted history of raw information.
+
+## ACID transactions
+
+**ACID** — Atomicity, Consistency, Isolation, Durability — is a fundamental
+set of four safety properties that guarantee database operations remain
+reliable and error-free, even during sudden crashes, power failures, or
+simultaneous user errors. A **transaction** is a sequence of multiple
+database actions treated as a single logical unit of work.
+
+Without ACID guardrails, if a multi-step update hits a network glitch halfway
+through, the system can save a partial, broken file that permanently
+corrupts your records. ACID compliance protects the whole ecosystem from data
+corruption by treating data mutations with strict, absolute validation rules:
+
+- **Atomicity** — an all-or-nothing rule. If a pipeline updating 100 rows
+  fails on row 99, the entire operation is rolled back as if it never
+  happened. No partial writes.
+- **Consistency** — any data written strictly obeys predefined structural
+  blueprints, schema enforcement, and database constraints before it's
+  committed to storage.
+- **Isolation** — when multiple pipelines or users concurrently modify the
+  same data lake, their transactions run independently without overlapping or
+  cross-contaminating each other's live files.
+- **Durability** — once a transaction is successfully written, its changes
+  are permanently recorded in non-volatile storage and transaction logs. The
+  clean data is never lost, even after a catastrophic power failure.
+
+## Delta Lake
+
+**Delta Lake** is an open-source storage management layer installed directly
+on top of a standard cloud data lake (Amazon S3, Google Cloud Storage) to
+turn it into a highly organized, reliable Data Lakehouse. Historically, data
+lakes let companies store massive volumes of raw files cheaply, but they
+lacked management controls and degraded into "data swamps" where simultaneous
+file updates could corrupt information. Delta Lake fixes this by wrapping raw
+files in a protective engine that brings database-style reliability, strict
+data quality controls, and fast SQL query performance to your existing cloud
+storage — all while keeping the lake's ultra-low operational cost.
+
+The engine achieves this through three core technical guardrails:
+
+- **ACID compliance** — an all-or-nothing gatekeeper. If a computer crashes
+  mid-pipeline, a half-written file is safely rolled back instead of
+  permanently corrupting the database.
+- **The Delta Log** — a hidden central ledger recording a perfect historical
+  diary of every data mutation. This powers **Time Travel**, letting
+  engineers instantly query or restore the dataset exactly as it looked at
+  any point in the past.
+- **Schema enforcement** — validates the structure of all incoming streams at
+  the door, blocking malformed data before it can crash downstream ML models
+  or dashboards.
+
+You don't choose *between* Delta Lake and ACID transactions — you use Delta
+Lake *because* it provides ACID transactions on top of cheap cloud object
+storage. It turns a chaotic, unsafe data lake into a reliable,
+enterprise-ready lakehouse.
+
+| | Delta Lake | ACID transactions |
+|---|---|---|
+| What is it? | An open-source storage layer built on top of file systems | A theoretical standard of data integrity and reliability |
+| Implementation | You install it, write code with it, and store files (Delta tables) | A checklist of guarantees implemented by the storage engine |
+| Mechanism | Parquet files + an immutable `_delta_log` file tracker | Write-ahead logs, locking mechanisms, isolation levels |
+| Scope | Specific to the Big Data / Cloud Lakehouse ecosystem | Applies globally to all databases, financial systems, storage engines |
+
+### The Delta transaction log: how ACID actually works
+
+`_delta_log/` is a hidden directory of JSON commit files at the root of every
+Delta table. Each commit is one atomic operation — add new Parquet files,
+remove old ones, never a partial write. The read protocol replays every
+commit from version 0 to reconstruct the current table state.
+
+Writers use **optimistic concurrency control**: they check for conflicting
+commits before finalizing a write. If two writers race on the same partition,
+one wins and one retries — no corruption, no data loss. This is how Delta
+guarantees ACID without a traditional database engine underneath it.
+
+After every 10 commits, Delta writes a `checkpoint.parquet` so readers don't
+have to replay thousands of JSON files on startup — this is Delta Log
+compaction.
+
+### `MERGE` / `UPSERT` — why overwrite is not enough
+
+A raw overwrite rewrites the entire table for one changed row: O(n) cost, no
+history, unsafe under concurrency. `MERGE` is the operation that makes atomic
+upserts possible:
+
+```sql
+MERGE INTO target USING source ON condition
+WHEN MATCHED THEN UPDATE
+WHEN NOT MATCHED THEN INSERT
+```
+
+Delta executes `MERGE` atomically: it scans only the affected files, writes
+new Parquet, and logs the operation. The typical use case is **CDC (Change
+Data Capture)** — applying inserts, updates, and deletes from a source system
+in one pass. **Predicate pushdown** lets Delta skip files whose min/max stats
+prove no matching rows exist, which is a massive speedup. Combine `MERGE`
+with timestamp columns for **SCD Type 2** — full history without duplicates
+or missing records.
+
+### `OPTIMIZE` and `Z-ORDER BY` — data skipping
+
+Streaming writes create thousands of tiny Parquet files — the **small files
+problem** — and each file read is a separate I/O operation that kills query
+scan time.
+
+- `OPTIMIZE table` compacts small files into larger ones (default target
+  ~1 GB) within each partition.
+- `Z-ORDER BY (col1, col2)` co-locates related values in the same files using
+  space-filling curves. Every file's `_delta_log` entry records min/max stats
+  per column, so a reader skips irrelevant files entirely — e.g. `WHERE
+  country = 'SA'` reads under 5% of files if the table is Z-ordered by
+  `country`.
+
+Schedule `OPTIMIZE` weekly or after bulk loads — running it too frequently
+has diminishing returns.
+
+### `VACUUM` and Time Travel — storage management
+
+Old Parquet files stay on disk until explicitly cleaned; Delta just stops
+referencing them. That's what makes Time Travel possible:
+
+```sql
+SELECT * FROM table VERSION AS OF 5
+SELECT * FROM table TIMESTAMP AS OF '2024-01-01'
+```
+
+`VACUUM table RETAIN 168 HOURS` deletes files older than the retention window
+(default 7 days). **`VACUUM` is irreversible** — deleted files cannot be
+restored from Delta. Never vacuum below 7 days if streaming readers are still
+active; they may reference older offsets. Longer retention means richer time
+travel history, at the cost of a higher object storage bill.
+
+### Schema evolution — handling upstream changes
+
+By default, Delta rejects writes with schema mismatches — this protects
+downstream queries from silent corruption. To opt in to schema evolution:
+
+- `spark.conf.set("spark.databricks.delta.schema.autoMerge.enabled", "true")`
+- `mergeSchema=True` on write — adds new columns from the source, never drops
+  existing ones.
+- `overwriteSchema=True` — a full schema replacement, for intentional
+  breaking changes only.
+
+Schema enforcement happens at **write time, not read time** — errors surface
+at the producer, not the consumer. Best practice: version schema changes, and
+notify consumers before adding `NOT NULL` columns or renaming fields.
+
+## Lab: build a local mini-lakehouse using Delta Lake
+
+The [Day 1 lab notebook](Day1_Lab.ipynb) simulates a production environment
+using Apache Spark (via PySpark) and Delta Lake, demonstrating every concept
+above end to end: ACID transactions, schema enforcement, `MERGE`,
+`OPTIMIZE`/`Z-ORDER`, `VACUUM`, Time Travel, and schema evolution — on a real,
+executed run.
+
+What to look for in the output:
+
+- The Delta Lake engine automatically catches a malicious schema deviation and
+  causes a controlled crash, demonstrating how it prevents your production
+  Data Lake from degrading into a disorganized "data swamp."
+- The history ledger maps out exact version numbers, timestamps, and
+  operations (`WRITE` / `APPEND`), showing how easy it is to perform
+  point-in-time rollbacks for auditing or ML reproducibility.
+
+::: {.callout-note}
+Running the Delta Lake part of this notebook locally on Windows requires a
+`winutils.exe` / `HADOOP_HOME` setup for PySpark — a standard PySpark-on-Windows
+limitation, not a bug in the notebook. It runs cleanly on Colab (Linux) or
+macOS/Linux with no extra setup.
+:::

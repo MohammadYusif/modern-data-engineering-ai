@@ -1,0 +1,99 @@
+project:
+  type: website
+  # Each day's lab notebook(s) live in their own L0N/ folder and render
+  # directly into the site with real saved outputs from an executed run.
+  render:
+    - "*.qmd"
+    - "L0*/*.ipynb"
+  title: "Modern Data Engineering for AI Systems"
+  preview:
+    port: 4701
+  output-dir: _site
+
+website:
+  title: "Modern Data Engineering for AI Systems"
+  site-url: https://mohammadyusif.github.io/modern-data-engineering-ai/
+  repo-url: https://github.com/MohammadYusif/modern-data-engineering-ai
+  page-navigation: true
+  navbar:
+    left:
+      - href: index.qmd
+        text: "Home"
+    right:
+      - icon: github
+        href: https://github.com/MohammadYusif/modern-data-engineering-ai
+        text: "Source"
+  sidebar:
+    style: docked
+    collapse-level: 1
+    contents:
+      - index.qmd
+      - section: "Day 1 — Modern Data Architectures"
+        contents:
+          - L01/00_intro.qmd
+          - L01/01_lakehouse_architectures.qmd
+          - L01/Day1_Lab.ipynb
+      - section: "Day 2 — Real-Time Data Pipelines"
+        contents:
+          - L02/00_intro.qmd
+          - L02/01_streaming_and_event_driven_architectures.qmd
+          - L02/02_building_real_time_pipelines.qmd
+          - L02/Day2_Lab.ipynb
+      - section: "Day 3 — Vector Databases and Advanced RAG Engineering"
+        contents:
+          - L03/00_intro.qmd
+          - L03/01_vector_databases_and_embeddings.qmd
+          - L03/02_advanced_rag_engineering.qmd
+          - L03/Day3_Lab.ipynb
+          - L03/Day3_Exercise.ipynb
+      - section: "Day 4 — Data Quality, Governance, and Lineage"
+        contents:
+          - L04/00_intro.qmd
+          - L04/01_data_quality_principles.qmd
+          - L04/02_governance_frameworks.qmd
+          - L04/03_lineage_and_observability.qmd
+          - L04/Day4_Lab.ipynb
+      - section: "Day 5 — Architecture Integration and Final Project"
+        contents:
+          - L05/00_intro.qmd
+          - L05/01_unified_architecture.qmd
+          - L05/02_final_project.qmd
+          - L05/Day5_Lab.ipynb
+  page-footer:
+    left: "Modern Data Engineering for AI Systems — SDAIA Academy capstone course"
+    right:
+      - icon: github
+        href: https://github.com/MohammadYusif/modern-data-engineering-ai
+        text: "Source"
+
+execute:
+  # Lab notebooks already contain saved outputs from a real executed run
+  # (Colab, real Spark/Delta output). Students won't have that environment
+  # configured here, so render from the saved outputs instead of
+  # re-executing. See CLAUDE.md.
+  enabled: false
+
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contents"
+    anchor-sections: true
+    smooth-scroll: true
+    mermaid:
+      theme: default
+    respect-user-color-scheme: true
+    theme:
+      light: cosmo
+      dark: darkly
+
+# NOTE: revealjs is deliberately NOT a project-level format.
+# Listing it beside `html` makes Quarto render every page twice, and both
+# outputs claim the same `<name>.html`, so the project render dies with
+# "NotFound ... rename '<name>.html'" on whichever one loses the race.
+# To build slides from a single page, ask for the format explicitly:
+#     quarto render L01/00_intro.qmd --to revealjs
+# and put the slide options in that document's own front matter.
+
+number-depth: 1
+lightbox: auto

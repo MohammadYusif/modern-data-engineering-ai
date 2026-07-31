@@ -1,0 +1,42 @@
+---
+title: "Day 5 — Architecture Integration and Final Project"
+format: html
+---
+
+For four days you built the pieces one at a time: a lakehouse that stores
+data reliably (Day 1), a streaming layer that gets it there in real time
+(Day 2), a vector index and RAG pipeline that lets an AI system reason over
+it (Day 3), and a quality/governance/lineage layer that keeps the whole thing
+trustworthy and auditable (Day 4). Each of those days was deliberately
+self-contained — its own notebook, its own tools, its own narrow problem.
+
+**Today has no new tool to learn.** Day 5 is where those four pieces stop
+being four separate labs and become one system. The technical question
+changes from "how does Kafka work" or "how does a vector index work" to "how
+do these things hand data to each other, in what order, and what happens when
+one of them fails or flags bad data." That's a systems-design question, not a
+new-library question — which is exactly the skill a production AI platform
+actually demands, and exactly what the capstone grades.
+
+The second half of today is the **final project**: a single starter notebook
+that already runs end-to-end using lightweight stand-ins for every one of the
+week's real tools, and your team's job — in teams of three — is to replace
+those stand-ins with the real Kafka, Delta Lake, Great Expectations, and
+vector-DB code you already built earlier in the week.
+
+## Subtopics for today
+
+1. The unified reference architecture — how ingestion, storage, quality,
+   governance, and RAG serving connect into one platform
+2. The recommended technology stack for each architectural layer
+3. AI infrastructure orchestration — coordinating compute, workflows, models,
+   and data at platform scale (Airflow DAGs and beyond)
+4. The final capstone project — structure, the team extension checklist, and
+   the grading rubric
+5. **Hands-on lab:** the Day 5 capstone starter — a runnable five-module
+   pipeline your team extends into the real thing
+
+Read [The Unified Architecture](01_unified_architecture.qmd), then
+[The Final Project](02_final_project.qmd), then work through the
+[lab notebook](Day5_Lab.ipynb) — it *is* the starting point for your capstone
+submission, not just a demo to read.

@@ -1,0 +1,92 @@
+---
+title: "Modern Data Engineering for AI Systems"
+format: html
+---
+
+## Course overview
+
+Before a model can be trained, before a feature vector can be computed, before
+making any prediction — data must move. It must be collected, cleaned,
+transformed, validated, and delivered reliably. Data engineering is that
+discipline.
+
+This intensive training program prepares Data Engineers, AI Engineers, and AI
+Practitioners to build modern, scalable, secure, and production-ready data
+architectures that support Artificial Intelligence systems, real-time data
+pipelines, vector databases, Retrieval-Augmented Generation (RAG), and
+intelligent analytics platforms.
+
+It gives you a complete mental model of modern data engineering for AI
+systems: how pipelines are designed, where they break, what patterns
+experienced engineers use to make them reliable, and how the data layer
+connects to every other part of the ML system.
+
+## Target audience
+
+- Data Engineers
+- Data Scientists interested in production AI pipelines
+- Systems Architects
+- Technical Team Leads and AI Architects
+- Data Infrastructure Administrators
+
+## Key learning outcomes
+
+- Design and implement Data Lakehouse architectures using Delta Lake.
+- Build robust real-time data pipelines for streaming applications.
+- Implement vector databases and advanced RAG engineering for generative AI
+  models.
+- Apply automated data governance, quality frameworks, and lineage tracking.
+- Integrate components into a scalable data infrastructure via a
+  production-simulated capstone project.
+
+## Training methodology
+
+| Component | Share |
+|---|---|
+| Theory | 25% (1.5 hours) |
+| Labs | 50% (3 hours, directed) |
+| Review | 25% (1.5 hours, feedback/review) |
+
+## Technical requirements
+
+- **Hardware:** Intel i5/M1, 16GB RAM (minimum) — i7/M2, 32GB RAM (preferred)
+- **Software:** Python 3.11+, Docker Desktop, VS Code, cloud access (preferred)
+
+## Outline
+
+**Day 1 — Modern Data Architectures**
+
+1. [Course intro & methodology](L01/00_intro.qmd)
+2. [Warehouses, lakes, and lakehouses; decoupling compute from storage; ELT
+   over ETL; Delta Lake and ACID transactions](L01/01_lakehouse_architectures.qmd)
+3. [Lab: build a local mini-lakehouse with Delta Lake](L01/Day1_Lab.ipynb)
+
+**Day 2 — Real-Time Data Pipelines**
+
+1. [Course intro & subtopics](L02/00_intro.qmd)
+2. [Streaming and event-driven architectures](L02/01_streaming_and_event_driven_architectures.qmd)
+3. [Building real-time pipelines: Kafka, windowing, exactly-once delivery](L02/02_building_real_time_pipelines.qmd)
+4. [Lab: real-time streaming pipeline with Kafka & Delta Lake](L02/Day2_Lab.ipynb)
+
+**Day 3 — Vector Databases and Advanced RAG Engineering**
+
+1. [Course intro & subtopics](L03/00_intro.qmd)
+2. [Vector databases and embeddings](L03/01_vector_databases_and_embeddings.qmd)
+3. [Advanced RAG engineering: chunking, hybrid search, reranking, evaluation](L03/02_advanced_rag_engineering.qmd)
+4. [Lab: vector databases and advanced RAG engineering](L03/Day3_Lab.ipynb)
+5. [Exercise: build a RAG pipeline from scratch](L03/Day3_Exercise.ipynb)
+
+**Day 4 — Data Quality, Governance, and Lineage**
+
+1. [Course intro & subtopics](L04/00_intro.qmd)
+2. [Data quality: principles, validation, and contracts](L04/01_data_quality_principles.qmd)
+3. [Automated governance and enterprise policy](L04/02_governance_frameworks.qmd)
+4. [Lineage and data observability](L04/03_lineage_and_observability.qmd)
+5. [Lab: data quality gates, Great Expectations, and OpenLineage on real retail data](L04/Day4_Lab.ipynb)
+
+**Day 5 — Architecture Integration and Final Project**
+
+1. [Course intro & subtopics](L05/00_intro.qmd)
+2. [The unified architecture](L05/01_unified_architecture.qmd)
+3. [The final project](L05/02_final_project.qmd)
+4. [Final project: architecture integration capstone](L05/Day5_Lab.ipynb)

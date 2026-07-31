@@ -1,0 +1,284 @@
+---
+title: "Advanced RAG Engineering"
+format: html
+---
+
+## Why RAG exists
+
+Ask a large language model something like "What were the key discussion
+points in our company's board meeting yesterday?" and it will do one of three
+things: hallucinate a confident but false answer, admit it doesn't know
+(because its training data has a cutoff date), or give a generic non-answer
+("board meetings typically discuss strategy and finances…"). None of those
+are useful, and all three come from the same root causes: the model's
+knowledge is **static** (frozen at training time), it has **no memory of your
+private data** (it never saw your internal documents), and it is **prone to
+hallucination** (when unsure, it guesses plausibly instead of admitting
+ignorance).
+
+**Retrieval-Augmented Generation (RAG)** retrieves relevant documents from an
+external knowledge source — usually a vector database — and injects them into
+the LLM's prompt, so the model generates an answer grounded in real,
+retrieved data rather than in memory alone. It's the difference between an
+open-book and a closed-book exam: without RAG, the model answers purely from
+memory and may hallucinate; with RAG, it looks the answer up first, then
+answers from what it found. Embeddings and similarity search — covered in
+[Vector Databases and Embeddings](01_vector_databases_and_embeddings.qmd) —
+are the fuel and the engine; RAG is the complete vehicle built around them.
+
+Every RAG pipeline runs in three phases: **retrieve** relevant documents
+using similarity search, **augment** the prompt with those documents, and
+**generate** an answer grounded in that context.
+
+## The complete RAG architecture
+
+The full pipeline splits into two steps that run at very different times:
+**indexing**, done once offline, and **querying**, done every time a user
+asks something.
+
+```{mermaid}
+graph TD
+    A["Documents<br>(PDFs, wikis, emails, code)"] --> B["Chunking<br>(split into passages)"]
+    B --> C["Embedding<br>(chunk → vector)"]
+    C --> D[("Vector DB<br>(chunk + vector + metadata)")]
+```
+
+### Phase one: indexing (preparation)
+
+This is the offline step — building the "textbook" the system will later
+search:
+
+| Step | Action | Example |
+|---|---|---|
+| 1. Load | Collect all source documents | Company policies, product manuals, support tickets |
+| 2. Chunk | Split into semantic units | Each chunk = 512 tokens with 50-token overlap |
+| 3. Embed | Generate a vector for each chunk | `chunk_vector = embedding_model(chunk_text)` |
+| 4. Store | Save chunk + vector + metadata | `{id: 123, text: "...", vector: [0.1, 0.9, ...], source: "HR_policy.pdf"}` |
+
+### Phase two: querying (inference)
+
+This runs on every user question. For the query "What is our vacation
+policy?": embed the query, run similarity search against the vector database
+to get the top-*k* nearest chunks (e.g., `k=5`), retrieve the actual text of
+those chunks, build a prompt containing system instructions plus the
+retrieved chunks plus the user's question, send it to the LLM, and return the
+generated answer — e.g., "Our vacation policy provides 15 days per year…"
+
+## Three RAG architecture patterns
+
+| Pattern | Flow | Pros | Cons | Use case |
+|---|---|---|---|---|
+| 1. Naive RAG | Query → Retrieve → Augment → Generate → Answer | Easy to build, works for simple Q&A | No quality checks; retrieves wrong chunks often | Prototypes, internal demos |
+| 2. Advanced RAG | Query → rewrite → Retrieve → Rerank → Filter → Augment → Generate | Much higher accuracy | More latency, more components to maintain | Production systems |
+| 3. Modular / Agentic RAG | System decides which retriever to call (vector DB, web search, SQL, API); can retrieve iteratively | Most powerful — answers complex multi-hop questions | Complex to build and debug | Multi-hop, tool-using assistants |
+
+Advanced RAG adds two things around the naive loop: **pre-retrieval**
+processing (rewriting an ambiguous query, expanding it with synonyms) and
+**post-retrieval** processing (reranking chunks with a more expensive
+cross-encoder, filtering out low-quality ones). Modular/agentic RAG goes
+further still — the system can ask a follow-up question, retrieve again, and
+chain retrievals together, which is the only way to answer something like
+"What is the capital of the country where Einstein was born?" (a single
+retrieval can't connect those two facts).
+
+## Walking through a real query
+
+User asks: *"How many vacation days do new hires get?"*
+
+1. **Embed the query** → `[0.23, -0.56, 0.78, ...]`
+2. **Similarity search** returns the top 3 chunks: Chunk A (score 0.92,
+   "New hires in their first year receive 10 vacation days"), Chunk B (score
+   0.88, "Employees with 1–5 years of service receive 15 days"), Chunk C
+   (score 0.45, "Vacation policy was revised in January 2024").
+3. **Reranking** (optional): a cross-encoder re-evaluates all three and
+   promotes Chunk A to rank 1, dropping Chunk C entirely as irrelevant noise.
+4. **Build the prompt**: `Context: New hires in their first year receive 10
+   vacation days. Question: How many vacation days do new hires get? Answer:`
+5. **LLM generation**: "New hires receive 10 vacation days during their
+   first year of employment."
+6. **Return to user.**
+
+Notice what happened: the LLM did not "know" this fact. It read it from the
+retrieved chunk and paraphrased it — that's the entire point of RAG.
+
+### Where basic RAG breaks
+
+| Problem | Explanation | Mitigation |
+|---|---|---|
+| Low recall | Relevant chunks not retrieved | Improve chunking, embedding model, or increase *k* |
+| Low precision | Irrelevant chunks retrieved | Add reranking, metadata filtering |
+| Context window overflow | Retrieved too much text | Compress chunks, use a smaller *k* |
+| Outdated data | Vector DB hasn't been updated | Implement incremental indexing |
+| Multi-hop questions | Single retrieval can't connect separate facts | Use iterative or agentic RAG |
+
+## Chunking strategies
+
+Imagine splitting a 10-page medical paper into rigid 100-character chunks.
+One chunk ends with "The patient showed no signs of" and the next begins
+with "improvement after treatment." A user asks "Did the patient improve?"
+and the system retrieves one chunk with no answer, or the other with missing
+context — either way, a wrong answer. **Chunking is the art of breaking
+documents into pieces that are meaningful, self-contained, and searchable.**
+
+Good chunking has three goals: **semantic completeness** (each chunk should
+make sense on its own — cutting a sentence in half fails this), **appropriate
+size** (small enough for efficient retrieval, large enough to hold context —
+50-character chunks lose meaning, 5000-character chunks waste the context
+window), and **contextual boundaries** (respect the document's natural
+structure — never split inside a table, code block, or list). The golden
+rule: a chunk should be a unit of meaning — a paragraph, a function — not an
+arbitrary slice of bytes.
+
+| Strategy | How it works | Best for | Avoid for |
+|---|---|---|---|
+| Fixed-size | Splits every *N* characters/tokens, regardless of content | Logs, uniform text, unknown structure | Any structured document — it breaks sentences and ideas |
+| Sentence-based | Splits on punctuation boundaries | Conversational text, support tickets | Very long or complex sentences; abbreviations like "Dr. Smith" can fool it |
+| Recursive / hierarchical | Recursively splits by decreasing boundary — document → section → paragraph → sentence — stopping once a chunk is within the target size | Books, manuals, legal documents with clear headings | Flat, unstructured text with no real hierarchy |
+| Semantic | Embeds sliding windows of sentences; splits where similarity between adjacent windows drops sharply | Large, mixed-content documents — textbooks, research papers | Small or simple documents — computationally overkill |
+
+Recursive chunking keeps a paragraph attached to its section, and a sentence
+to its paragraph, so the system can store parent-child relationships — but it
+requires actually parsing the document's headings. Semantic chunking is the
+most content-aware of the four: it detects where meaning shifts by comparing
+the embeddings of consecutive sentence windows, splitting only where
+similarity drops — at the cost of running an embedding model during
+indexing, not just at query time.
+
+### Chunk overlap
+
+Regardless of strategy, chunks should almost always overlap — chunk 2
+repeats the last few tokens of chunk 1:
+
+```
+Chunk 1: [A B C D E F G]
+Chunk 2: [F G H I J K L]   ← overlaps by 2 tokens (F, G)
+Chunk 3: [K L M N O P Q]   ← overlaps by 2 tokens (K, L)
+```
+
+Without overlap, "The patient showed no" ends one chunk and "signs of
+improvement" starts the next, and the LLM never sees the complete sentence.
+With overlap, both chunks contain the boundary. Recommended overlap is
+10–20% of chunk size: 512-token chunks get 50–100 tokens of overlap;
+256-token chunks get 25–50.
+
+## Hybrid search and Reciprocal Rank Fusion
+
+Pure vector search misses exact keyword matches — a query for "GPT-4" can
+retrieve documents about "a language model" instead of the literal string.
+Pure BM25 (keyword search) misses semantic meaning entirely — "canine
+therapy" doesn't match "dog treatment" at all if no words overlap.
+
+**Hybrid search** runs both a vector ANN search and a BM25 keyword search in
+parallel, then merges the two result lists with **Reciprocal Rank Fusion
+(RRF)**:
+
+$$\text{RRF score} = \sum_{\text{list}} \frac{1}{k + \text{rank}_i}, \quad k = 60$$
+
+RRF rewards a document that ranks highly in *both* lists, without needing any
+weights tuned by hand — and empirically it outperforms a weighted linear
+combination of the two scores in most benchmarks. Most modern vector
+databases (Weaviate, Elasticsearch, Qdrant) expose hybrid search natively.
+
+## Cross-encoder reranking — the second precision gate
+
+A **bi-encoder** (the retrieval stage) embeds the query and each document
+independently — fast, but it can miss subtle relevance because query and
+document never actually interact during scoring. A **cross-encoder**
+(reranking stage) takes the `(query, document)` pair *jointly* and scores
+them together — far more accurate, because it can model the interaction
+between query tokens and document tokens directly, at the cost of one
+inference call per candidate (O(n), versus O(1) for bi-encoder similarity).
+
+The standard workflow: retrieve the top 50 candidates cheaply with the
+bi-encoder, rerank those 50 with the cross-encoder, then pass only the top 3
+to 5 to the LLM. Rerank only when retrieval returns more than ~10 candidates
+— it adds roughly 50–200ms of latency per query. Common models:
+`ms-marco-MiniLM-L-6-v2` (fast), `bge-reranker-large` (more accurate), or a
+hosted option like the Cohere Rerank API.
+
+## RAG evaluation — the triad you must measure
+
+You cannot guess whether an architecture change improved retrieval — you
+have to measure it:
+
+- **Context Precision** — are the retrieved chunks actually relevant? (no
+  noise)
+- **Context Recall** — did retrieval find *all* the chunks needed to answer?
+  (completeness)
+- **Answer Faithfulness** — does the generated answer stick to the retrieved
+  context, or does it add facts that weren't there? (hallucination risk)
+- **Answer Relevance** — does the answer actually address what the user
+  asked?
+
+**RAGAS** is the standard open-source framework: it computes all four
+metrics automatically using an LLM as judge. A useful alert rule: if
+faithfulness drops below 0.85, the retrieval or the prompt has regressed and
+needs attention.
+
+## Building production-ready RAG pipelines
+
+Turning a working prototype into something stable and accurate at scale
+means implementing five layers:
+
+```
+[Ingestion Layer] → [Hybrid Retrieval] → [Two-Stage Reranking] → [Data Sync / CDC] → [Evaluation Triad]
+```
+
+1. **The ingestion layer.** Production data is rarely clean markdown — it's
+   multi-column PDFs, scanned documents, and messy financial tables. Modern
+   pipelines use vision-based layout parsers (Docling, Unstructured) to
+   convert these into clean semantic trees that preserve table structure.
+   Every chunk should also be stamped with metadata — `file_id`,
+   `security_clearance_level`, `creation_date`, `document_version` — you
+   can't just inject raw text.
+2. **Hybrid retrieval.** Relying only on vector search is a classic prototype
+   mistake — it struggles with exact product serial numbers, code symbols,
+   or jargon. Combine dense (vector) retrieval with sparse (BM25) retrieval
+   via RRF, as covered above.
+3. **Two-stage reranking**, to mitigate "lost-in-the-middle": dumping the top
+   30 raw chunks into an LLM overwhelms it and it starts ignoring
+   information buried in the middle of the prompt. Stage one fetches the
+   top 50 candidates cheaply; stage two reranks with a cross-encoder and
+   keeps only the best 3–5.
+4. **Keeping data fresh — incremental sync and CDC.** A production knowledge
+   base isn't static; a nightly full wipe-and-reindex doesn't scale.
+
+   | Sync strategy | How it works | When to use it |
+   |---|---|---|
+   | Incremental updates | Monitors folder timestamps or commit histories, re-indexes only new/modified documents | Standard corporate files and wikis |
+   | Change Data Capture (CDC) | Hooks directly into a live database to mirror inserts/updates/deletes into the vector store instantly | Highly dynamic data — live inventory, ticketing |
+5. **Continuous evaluation.** Score every architectural change against the
+   RAG triad (context relevance, groundedness, answer relevance) — you
+   cannot tell whether a change helped without measuring it.
+
+## Lab: building an advanced RAG system
+
+The [Day 3 lab notebook](Day3_Lab.ipynb) implements this entire pipeline end
+to end over a small built-in knowledge base of data-engineering documents
+(Kafka, Delta Lake, RAG, HNSW, hybrid search): document chunking, a ChromaDB
+vector index (HNSW backend), BM25 keyword search, RRF hybrid fusion,
+cross-encoder reranking, RAG prompt construction, and RAGAS-style precision
+and similarity evaluation — all on a real, executed run using local,
+free components (no hosted vector DB, no paid embeddings API, no GPU).
+
+What to look for in the output:
+
+- Candidate counts moving through each stage — vector search, BM25 search,
+  RRF fusion — for four different queries against the same eight-document
+  knowledge base.
+- The cross-encoder reranking step narrowing the fused candidates down to
+  the top 3, with each surviving chunk's text printed.
+- The final RAG prompt assembled from the top reranked chunks, plus the
+  retrieval metrics (`context_precision`, `avg_similarity`) and a pass/fail
+  quality read-out, printed for every query.
+
+::: {.callout-note}
+The [practice exercise](Day3_Exercise.ipynb) covers the same six stages as
+the lab, but its task cells contain deliberate `???` placeholders for
+students to fill in — it will **not** run as delivered, and that is
+intentional, not a bug. It's kept as a separate notebook from the worked lab
+rather than merged into it, since merging would either break the lab's
+run-as-delivered state or defeat the exercise's purpose. Complete the `???`
+blanks yourself, then run it top to bottom to check your work against the
+inline test-cell assertions.
+:::

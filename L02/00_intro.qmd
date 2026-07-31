@@ -1,0 +1,48 @@
+---
+title: "Day 2 — Real-Time Data Pipelines"
+format: html
+---
+
+Yesterday we decoupled storage from compute and settled the ETL-vs-ELT question.
+Both of those still assumed a comfortable premise: data arrives, sits somewhere,
+and gets processed **later**. Today we break that premise.
+
+Most of the data an AI system actually cares about — a user's click, a sensor
+reading, a credit-card swipe, a chat message arriving mid-conversation — is not
+useful "later." A fraud model that flags a stolen card six hours after the
+purchase has already failed. A recommendation engine that updates your feed
+once a day feels broken compared to one that adapts on your very next scroll.
+**Real-time data engineering is the discipline of treating data as a
+continuous, never-ending flow of individual events, and processing each one
+within milliseconds of it happening — not storing it to process in bulk
+tonight.**
+
+This matters even more once AI is in the loop. LLM inference is slow relative
+to a database query — a call can take seconds, not milliseconds — and
+multi-agent systems chain many of those calls together. A traditional
+synchronous request-response design blocks a whole thread on every one of
+them. Event-driven, streaming architectures are how production AI systems
+absorb that latency without falling over: producers publish events and move
+on, brokers hold the backlog safely, and consumers — including AI models —
+process at their own pace, scaling up or down independently.
+
+## Real-Time Data Pipelines — Day 2
+
+Subtopics for today:
+
+1. Batch vs. streaming — why "process it tonight" stops being good enough
+2. Event-driven architectures for AI systems — producers, brokers, consumers
+3. Kafka internals — partitions, offsets, and consumer groups
+4. Stream processing patterns — tumbling/sliding/session windows, watermarks,
+   and exactly-once delivery
+5. Ingestion, transformation, and orchestration — the tools that wire it all
+   together
+6. **Hands-on lab:** a mock IoT streaming pipeline with windowed anomaly
+   detection and a Delta Lake sink, plus a real Kafka producer/consumer round
+   trip with a schema gate
+
+Read the lessons —
+[Streaming and Event-Driven Architectures](01_streaming_and_event_driven_architectures.qmd)
+and
+[Building Real-Time Pipelines](02_building_real_time_pipelines.qmd) —
+then work through the [lab notebook](Day2_Lab.ipynb).

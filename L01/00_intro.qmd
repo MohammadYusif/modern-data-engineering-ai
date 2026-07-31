@@ -1,0 +1,40 @@
+---
+title: "Day 1 — Foundations of Data Engineering for AI"
+format: html
+---
+
+Before a model can be trained, before a feature vector can be computed, before
+making any prediction — data must move. It must be collected, cleaned,
+transformed, validated, and delivered reliably. **Data engineering is that
+discipline.**
+
+If you look at the field of Artificial Intelligence and Data Science today,
+everyone talks about the glamorous side: training Large Language Models,
+running neural networks, and building autonomous agents. But here is the
+industry's open secret: **an AI model is only as smart as the data you feed
+it.** Without data engineers building the invisible roads, pipes, and
+purification systems, data remains trapped, messy, and useless.
+
+This course gives you a complete mental model of modern data engineering for
+AI systems — how pipelines are designed, where they break, what patterns
+experienced engineers use to make them reliable, and how the data layer
+connects to every other part of the ML system.
+
+## Modern Data Architectures — Day 1
+
+Today we explore the **Modern Data Engineering Ecosystem** — the foundational
+infrastructure that powers all contemporary AI and analytical systems. We'll
+look at how data engineering evolved from legacy on-premise systems into
+highly scalable, cloud-native pipelines built specifically to feed downstream
+AI and business-intelligence workloads.
+
+Subtopics for today:
+
+1. Evolution of Data Architectures — from Data Warehouses to Lakehouses
+2. Core building blocks — decoupling compute and storage
+3. Data integration paradigms — ETL vs. ELT
+4. Delta Lake and ACID transactions
+5. **Hands-on lab:** building a mini-lakehouse using Delta Lake
+
+Read the [full Day 1 lesson](01_lakehouse_architectures.qmd), then work through
+the [lab notebook](Day1_Lab.ipynb).

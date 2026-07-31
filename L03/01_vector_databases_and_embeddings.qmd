@@ -1,0 +1,234 @@
+---
+title: "Vector Databases and Embeddings"
+format: html
+---
+
+## What is an embedding?
+
+An **embedding** is a numerical representation of data — text, an image, a
+sound clip — as a list of numbers called a **vector**. It's an AI technique
+that converts a word, a sentence, or a whole document into a long string of
+numbers, and you can think of those numbers as coordinates on a massive,
+multidimensional map.
+
+Imagine a map of the world: Cairo and Alexandria sit close together because
+they're physically close. An embedding model does the same thing, but for
+*meaning* instead of geography. The words "King" and "Queen" land at nearly
+the same coordinates because they both represent royalty. "I'm feeling down"
+and "I am sad" sit right next to each other even though the two sentences
+don't share a single word. Concretely, "King" might embed as `[0.12, -0.45,
+0.78, ..., 0.33]` (384 numbers long, for a typical small embedding model) and
+"Queen" as `[0.14, -0.43, 0.77, ..., 0.31]` — the vectors are close because
+the meanings are close. **Semantic similarity equals distance proximity.**
+
+Embeddings capture *relationships*, not just definitions. The classic
+word2vec example: in embedding space, `"Paris" - "France" + "Italy"` lands
+very close to `"Rome"`. In short: an embedding turns a human concept into a
+mathematical location.
+
+## What is a vector database?
+
+A traditional database — a spreadsheet, a SQL table — is built for exact
+matches: look up a specific order ID, a specific phone number. Ask it to
+"find documents about a happy puppy" and it has to scan every row of text
+looking for those literal words, missing anything phrased as "a joyful young
+dog." That's slow, and it's blind to meaning.
+
+A **vector database** is built differently. It stores the embeddings
+themselves — those long coordinate strings — and when you ask it a question,
+it doesn't read the text at all. It converts your question into a coordinate,
+drops that point onto the map, and asks: *what are the closest items
+surrounding this point?* This is called **similarity search** or **nearest
+neighbor search**, and because it relies on geometry rather than reading text
+line by line, a vector database can search billions of documents in
+milliseconds.
+
+```{mermaid}
+graph LR
+    Q["Your question"] --> E["Embedding model"]
+    E --> V["Query vector"]
+    V --> DB[("Vector database<br>(indexed embeddings)")]
+    DB --> R["Nearest-neighbor matches"]
+```
+
+Purpose-built, a vector database exists to do three things: store millions or
+billions of embedding vectors, index them with algorithms like **HNSW**
+(Hierarchical Navigable Small World) so search stays fast at scale, and answer
+a query by embedding it with the *same* model used on the stored documents,
+then finding its nearest neighbors.
+
+### How the search actually runs, in three steps
+
+1. **Indexing (preparation).** Before any query arrives, the database builds
+   a graph or clustering structure over every stored vector, so it never has
+   to brute-force scan the whole collection later. Common index types: HNSW
+   (a layered graph) and IVF (clusters vectors into buckets, like a phonebook
+   divided by city).
+2. **Querying (search).** Your text query is embedded with the same model
+   used at indexing time, then the system asks which stored vectors are
+   closest to that query vector, using a distance metric.
+3. **Retrieval (result).** The database returns the top-*k* most similar
+   items — say, the top 5 chunks — which are then handed to the LLM in a RAG
+   system to generate an answer.
+
+### Distance metrics
+
+| Metric | What it measures | Best for |
+|---|---|---|
+| Cosine similarity | Angle between vectors (ignores magnitude) | Text embeddings, where document length shouldn't dominate |
+| Euclidean distance | Straight-line distance | Low-dimensional, numeric data |
+| Dot product | Magnitude × direction | When vector length matters (e.g., recommendation scores) |
+
+Cosine similarity is the default for text: it ranges from −1 (opposite
+meaning) to +1 (identical meaning), and two vectors pointing the same
+direction score as highly similar even if one document is much longer than
+the other.
+
+### Why this matters
+
+Without vector databases and embeddings, LLMs have two structural flaws: they
+**forget** (a fixed context window can't hold a company's entire knowledge
+base) and they **hallucinate** (when unsure, they guess plausibly rather than
+admit ignorance). A vector database gives an LLM the equivalent of an
+open-book exam — instead of relying purely on what it memorized during
+training, it can look up the exact relevant passage first, then answer from
+that. This pairing is exactly what RAG (covered on the [next
+page](02_advanced_rag_engineering.qmd)) is built on.
+
+## Document indexing: two different layers
+
+"Indexing" gets used loosely, but in a vector database context it actually
+refers to two separate layers: how chunks are **logically** organized so the
+LLM gets the cleanest context, and how vectors are **physically** stored so
+the search itself is fast. Chunking (splitting documents into pieces) happens
+*before* indexing; indexing is what the database does with those chunks once
+it has them.
+
+### Logical / data indexing strategies
+
+These strategies decide how retrieved text connects back to its source, to
+maximize what the LLM actually sees:
+
+- **Single-level (flat) indexing.** The simplest style — every chunk is an
+  independent vector, and the system fetches the top matches and passes them
+  straight to the LLM.
+- **Parent-child (hierarchical) indexing.** Small child chunks (sentences)
+  are indexed for precision search, but each is linked to a larger parent
+  chunk (a paragraph). The system searches the precise child vectors but
+  returns the more context-rich parent text to the LLM.
+- **Hypothetical question indexing.** An LLM pre-reads every document and
+  generates several questions a user might plausibly ask about it. Those
+  *questions* — not the raw text — are what gets embedded and indexed. A
+  real user question then matches against a question that's phrased the way
+  users actually phrase things.
+- **Summary / document indexing.** Instead of indexing raw paragraphs, an LLM
+  writes a high-level summary of each whole document. The system searches
+  summaries first to find the right document, then drills into that
+  document's specific chunks.
+- **Knowledge graph indexing.** Extracts entities as nodes and relationships
+  as edges, so the system can answer questions that require connecting facts
+  scattered across separate documents — something flat chunk retrieval can't
+  do on its own.
+
+### Physical / algorithmic indexing strategies
+
+These are the actual **Approximate Nearest Neighbor (ANN)** algorithms —
+trading a small amount of mathematical precision for a large gain in search
+speed:
+
+| Strategy | Accuracy | Speed | Memory | Training required? | Use case |
+|---|---|---|---|---|---|
+| Flat (no index) | Exact | Very slow — O(N) | Low | No | Under 10K vectors |
+| IVF | Approximate | Fast | Moderate | Yes (k-means) | 100K–10M vectors |
+| HNSW | Very high | Very fast | High | No | Up to millions, when accuracy matters |
+| PQ | Approximate | Fast | Very low | Yes (codebooks) | Memory-constrained environments |
+| IVF+PQ | Good | Very fast | Very low | Yes | Large-scale, 100M+ vectors |
+| ScaNN | Very high | Extremely fast | Moderate | Yes | Performance-critical, Google-scale |
+
+- **Flat** brute-forces the exact distance to every vector — perfect
+  accuracy, but only viable on tiny collections.
+- **IVF** (Inverted File Index) clusters the vector space with k-means into
+  "buckets" (Voronoi cells); a query only searches the bucket its own vector
+  falls closest to, at the cost of some accuracy.
+- **HNSW** builds a multi-layer graph, like an express subway line — the
+  search takes big leaps across the top layer, then drops down layers to
+  fine-tune the exact match. It's what Pinecone, Weaviate, and ChromaDB use
+  by default.
+- **PQ** (Product Quantization) compresses each vector into small
+  approximate sub-vector codes, shrinking memory by up to 95% — often paired
+  with IVF as **IVF-PQ** for billion-scale collections.
+- **ScaNN**, Google's index, optimizes anisotropic vector distances to
+  favor vectors that align cleanly with the query's direction, for
+  hyper-scale production search.
+
+A simple decision path: under 10K vectors, use Flat (no training, exact).
+Need over 99% accuracy and have the RAM for it, use HNSW. Have over 10M
+vectors and limited RAM, use IVF+PQ. Operating at Google scale, consider
+ScaNN.
+
+### Tuning HNSW: precision vs. speed
+
+Since HNSW is the default in most production vector databases (Pinecone,
+Weaviate, ChromaDB), its three parameters are worth knowing by name:
+
+- **`M`** — bi-directional links per node. Higher `M` means better recall
+  but more memory (typical range: 16–64).
+- **`ef_construction`** — candidate list size while the index is being
+  built. Higher means a better-quality index, but a slower build.
+- **`ef` (search)** — candidate list size at query time. Higher means better
+  recall but slower search — this is the one you tune per query, at runtime.
+
+The trade-off is concrete: `ef=10` is fast but only around 85% recall;
+`ef=200` is slow but around 99% recall. Rule of thumb: tune `M` and
+`ef_construction` once, at build time; tune `ef` per query's latency budget,
+at runtime.
+
+## Semantic search and similarity search
+
+**Keyword search** — the traditional approach — matches exact words or
+substrings: `LIKE` clauses, inverted indexes, boolean logic. Search for
+"canine therapy" on a site whose articles only say "dog healing," and you get
+zero results, even though the content is exactly what you wanted. Keyword
+search is blind to meaning: it misses synonyms ("automobile" vs. "car"),
+misses context (is "Jaguar" an animal, a car, or an OS?), and breaks on
+polysemy — one word, many meanings.
+
+**Semantic search** understands the *intent* behind a query rather than its
+literal words. "Ways to calm a nervous dog" retrieves documents about
+"reducing canine anxiety" or "soothing an agitated pet" even though none of
+those exact words match. It handles synonyms, concept matching ("cold
+weather" ↔ "winter conditions"), and phrasing variation ("How do I…" ↔ "What
+is the method for…"). Semantic search is conceptual: it maps queries and
+documents into a shared meaning space.
+
+**Similarity search** is the mathematical engine underneath semantic search —
+not a linguistic operation at all, but a geometric one: given a target vector,
+find every stored vector close to it by some distance metric. A useful
+non-text analogy: imagine a room of people, each with an age and a height. Ask
+"find people similar to Alice" and a keyword match fails outright (no one
+else is named Alice), but plotting age against height and measuring distance
+immediately shows that Bob (26, 162cm) is close to Alice (25, 160cm) while
+Carol (45, 170cm) is far. Vector databases do exactly this, just across
+hundreds of dimensions instead of two.
+
+| Feature | Keyword search (old school) | Semantic / similarity search (modern) |
+|---|---|---|
+| How it searches | Scans literal strings of text characters | Converts the query to a vector; finds nearest-neighbor vectors |
+| What it finds | Only documents containing the exact words | Documents using different words for the same concept |
+| Flaw | Misses relevant documents that use different vocabulary | Needs more compute and a purpose-built vector database |
+
+### Summary
+
+| Concept | Explanation |
+|---|---|
+| Embedding | A list of numbers (vector) that captures the meaning of data |
+| Vector database | A database optimized to search millions of embeddings by similarity, not exact match |
+| Distance metric | A mathematical way to measure similarity (cosine, Euclidean, dot product) |
+| Index (e.g., HNSW) | A pre-built structure that speeds up nearest-neighbor search dramatically |
+| Use case | Powering LLM retrieval (RAG), semantic search, recommendations |
+
+The [next lesson](02_advanced_rag_engineering.qmd) builds on all of this to
+cover chunking, the full RAG architecture, and the production patterns that
+turn a prototype retrieval demo into something reliable enough to ship. The
+[lab notebook](Day3_Lab.ipynb) puts an HNSW-backed ChromaDB index, embeddings,
+and similarity search to work end to end.

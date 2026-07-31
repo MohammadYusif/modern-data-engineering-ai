@@ -1,0 +1,139 @@
+---
+title: "Automated Governance and Enterprise Policy"
+format: html
+---
+
+If data quality is about catching bad *records*, governance is about
+controlling who may touch data at all, and under what rules. Historically
+that meant a written policy document nobody re-read after onboarding.
+Increasingly, it means code: **automated governance frameworks** that
+enforce policy in real time as data moves through a pipeline, sitting
+underneath the human, legal **enterprise governance policies** that actually
+define what the rules are.
+
+## From static rules to an automated control plane
+
+Automated data governance is the shift from static, written-down rules to
+dynamic, machine-learning-driven software that monitors, classifies, and
+protects data continuously as it flows. Built on platforms like Collibra,
+Alation, Informatica CLAIRE, or open-source engines like Egeria, a modern
+framework operates as a control plane across four layers.
+
+```{mermaid}
+graph TD
+    A["1. Automated Discovery & AI Classification"] --> B["2. Live Metadata Sync & Active Catalogs"]
+    B --> C["3. Dynamic Policy & Real-Time Access Control"]
+    C --> D["4. Automated Data Lineage — the paper trail"]
+```
+
+### 1. Automated discovery and AI classification
+
+You cannot govern data you don't know exists, and enterprises routinely have
+thousands of tables scattered across lakes, warehouses, and production
+databases. Machine learning models continuously scan storage environments,
+reading structural patterns, regex indicators, and value distributions
+instead of waiting for a human to label each column. The outcome: sensitive
+data — PII, credit-card numbers (PCI), medical data (HIPAA) — gets
+automatically flagged and tagged, with encryption or masking applied
+instantly.
+
+### 2. Live metadata synchronization and active catalogs
+
+Metadata — who owns a table, when it last changed, its schema — used to live
+in a hand-maintained data dictionary that was obsolete within weeks.
+Automated frameworks capture schema changes and update frequencies as they
+happen, building an **always-accurate active catalog**. If an engineer
+changes a column from an integer to a string, the catalog reflects that
+instantly, enterprise-wide.
+
+### 3. Dynamic policy and real-time access control
+
+Traditional security relies on static roles ("HR managers can see this
+table"). Modern frameworks shift to **Attribute-Based Access Control
+(ABAC)**, enforced directly inside the data pipeline: the system reads an
+asset's metadata tag and cross-references it against compliance rules on the
+fly. If an analyst queries a table with customer history, the policy engine
+can mask just the `social_security_number` column while leaving the rest of
+the row available — security and usability at the same time.
+
+### 4. Automated data lineage — the paper trail
+
+When an executive looks at a dashboard number and asks "where did this come
+from, and can I trust it?", lineage is the answer. Automated lineage differs
+from the legacy approach in every dimension that matters:
+
+| Feature | Legacy lineage | Automated lineage |
+|---|---|---|
+| Mapping method | Developers manually draw diagrams in Visio or map paths in spreadsheets. | A parsing engine reads SQL query history, dbt transformations, and orchestrator logs automatically. |
+| Accuracy | Prone to human error and missing updates. | Accurate up to the second. |
+| Impact analysis | Guessing what breaks if a schema changes. | Instant visual maps of every downstream dashboard or model that depends on a table. |
+
+We go deeper on the mechanics of lineage — including the concrete
+OpenLineage event format — in the [next lesson](03_lineage_and_observability.qmd).
+
+In short: automated governance frameworks use automation and AI to manage
+quality, security, compliance, and monitoring across a modern data estate
+with far less manual overhead than the legacy, spreadsheet-driven approach.
+
+## Enterprise governance policies — the human layer
+
+If automated frameworks are the *code* enforcing rules in real time,
+**enterprise governance policies** are the actual laws, ethical guardrails,
+and corporate boundaries themselves — the strategic intent of the C-suite
+and legal department, defining how data must be handled, protected, and
+audited to survive in a regulated global economy. Enterprise governance
+policies more broadly are the formal rules covering how an organization
+manages operations, data, technology, security, employees, and compliance —
+ensuring the organization runs securely, efficiently, ethically, legally,
+and consistently.
+
+### The four cornerstones of enterprise governance policy
+
+**1. Regulatory compliance policies — the legal mandates.**
+Non-negotiable rules dictated by governments; violating them risks massive
+fines, lawsuits, and executive liability.
+
+- **Data sovereignty** — data belonging to a country's citizens must be
+  physically stored and processed within that country's borders (e.g.
+  European data staying in the EU).
+- **Regional mandates** — GDPR (Europe, user deletion rights), CCPA/CPRA
+  (California, consumer privacy), HIPAA (US) or MDR (Europe) for medical
+  data.
+
+**2. Data privacy and access control policies — the security perimeter.**
+Access follows the **Principle of Least Privilege (PoLP)**: an employee
+gets exactly the access their job requires, nothing more.
+
+- **RBAC/ABAC** — strict mandates on who can view what, e.g. "only HR
+  directors with Level 3 clearance may view unmasked salary data."
+- **Classification schemes** — every document or stream is labeled
+  `Public`, `Internal Only`, `Confidential`, or `Restricted`.
+
+**3. Information Lifecycle Management (ILM) policies.**
+Storing every byte forever is expensive, so ILM policies govern how data
+ages:
+
+| Policy phase | Corporate mandate | Action taken |
+|---|---|---|
+| Active retention | Keep hot, transactional data available for live reporting. | Stored in high-speed warehouses (Snowflake, BigQuery) for up to 2 years. |
+| Archival rules | Retain older, rarely-accessed but legally required data. | Moved to cold storage (e.g. AWS Glacier) for 7–10 years. |
+| Defensible deletion | Destroy data once its legal retention window expires. | Automated hard-deletion and cryptographic shredding. |
+
+**4. Responsible AI and generative AI governance policies.**
+With LLMs and RAG systems now embedded in corporate workflows, companies
+have had to draft an entirely new policy layer: the **"Shadow AI"
+blockade** — employees are forbidden from pasting corporate code,
+proprietary designs, or customer PII into public consumer LLMs. A
+confidential spreadsheet uploaded to an external model to "make a quick
+chart" can be absorbed into that vendor's training loop — a catastrophic,
+irreversible data breach.
+
+### Why this matters
+
+Automated governance frameworks and enterprise governance policies are two
+halves of the same system: policy defines *what* is allowed, and the
+automated control plane makes that definition *actually happen*, continuously,
+without depending on every engineer remembering the rulebook. Neither one
+alone is sufficient — a policy with no enforcement is a suggestion, and
+enforcement code with no policy behind it has no legal or ethical grounding
+to enforce.

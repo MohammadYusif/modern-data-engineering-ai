@@ -1,0 +1,150 @@
+---
+title: "Building Real-Time Pipelines"
+format: html
+---
+
+Building a production-grade streaming pipeline is a complete departure from
+batch engineering. Data is no longer a bounded file with a beginning and an
+end — it's an **unbounded dataset**: a continuous, append-only series of
+events that never finishes arriving. Producers and consumers stay **loosely
+coupled**, talking only through the broker, never directly to each other. To
+design for that, engineers need to understand what actually happens inside
+the broker and the processor sitting on top of it.
+
+## Kafka: partitions, offsets, and consumer groups
+
+A Kafka **topic** isn't a single log — it's split into **N ordered, immutable
+partitions**, and every message is routed to exactly one of them. Within a
+partition, each message gets a monotonically increasing **offset**, which is
+simply its address: "message #4,213 in partition 2."
+
+Consumers read as a **consumer group**: a set of workers that jointly consume
+a topic, with every partition assigned to exactly one member of the group at a
+time. That assignment is what sets the pipeline's real throughput ceiling —
+**adding consumers beyond the partition count gives zero extra parallelism**,
+because there's nothing left to hand them.
+
+| Concept | What it is | Why it matters |
+|---|---|---|
+| Partition | One ordered, immutable log within a topic | Unit of parallelism — more partitions, more concurrent consumers |
+| Offset | A message's position within its partition | Lets a consumer say exactly where it is |
+| Consumer group | A set of consumers sharing a topic's partitions | Each partition goes to one member only |
+| Offset commit | A consumer checkpoints its current position | Crash recovery resumes from the last committed offset, not from zero |
+| Rebalance | Partition reassignment when a member joins or leaves | Keeps the group's load balanced automatically |
+
+## Window types: tumbling, sliding, session
+
+A stream never "ends," so aggregations (sums, averages, counts) need a
+boundary to close over. That boundary is a **window**, and the three common
+shapes solve different problems:
+
+| Window type | Shape | Use case |
+|---|---|---|
+| **Tumbling** | Fixed-size, non-overlapping — every event belongs to exactly one window | Hourly sales totals — clean, non-overlapping reporting periods |
+| **Sliding** | Fixed-size, overlapping — one event can appear in multiple windows | Rolling 5-minute average CPU load — overlap is needed to catch a spike right at a window boundary |
+| **Session** | Gap-based — the window closes after N seconds of inactivity; size varies per session | Click-stream grouping — a user's session ends after 30+ minutes idle |
+
+The lab's `StreamProcessor` (in [Day2_Lab.ipynb](Day2_Lab.ipynb)) implements
+both a **tumbling** window (one-second buckets, used for a per-second event
+count) and a **sliding** window (a rolling 3-second average temperature) side
+by side over the same event stream, so you can see both update independently
+as events arrive.
+
+## Watermarks: handling late-arriving data
+
+Network delays mean an event timestamped `T` can physically arrive at the
+processor at `T + 5 minutes`. A **watermark** is a declared threshold that
+answers "how long am I willing to wait for a late event before I close the
+window and move on?" — in Spark Structured Streaming:
+
+```python
+stream.withWatermark("event_time", "5 minutes")
+```
+
+Anything that arrives after the watermark has already passed is either
+dropped or routed to a dead-letter side output. The trade-off is direct: a
+larger watermark buys more completeness at the cost of higher latency; a
+smaller one returns results faster but drops more late data. Set it from the
+**observed p99 latency** of the actual data source — not the theoretical
+worst case, which would make every window wait far longer than necessary.
+
+## Exactly-once delivery — the hard problem
+
+Every streaming system has to pick a delivery guarantee, and the honest
+options trade off against each other:
+
+| Guarantee | Behavior | Cost |
+|---|---|---|
+| At-most-once | Fire and forget | Fastest, but silent data loss on failure — never acceptable for financial or audit data |
+| At-least-once | Retry on failure | No data loss, but duplicates are possible — the most common default |
+| Exactly-once | No loss, no duplicates | Requires coordination between producer, broker, *and* consumer |
+
+Kafka reaches exactly-once with `enable.idempotence=true`, the transactional
+producer API, and `isolation.level=read_committed` on the consumer side. Flink
+reaches it with two-phase-commit checkpointing, which only works if the sink
+itself supports transactions (Kafka, JDBC, Iceberg all do). Either way,
+exactly-once isn't free — it adds roughly **20% throughput overhead** — so pay
+for it only where a duplicate would cause real harm (a double-charged payment,
+a double-counted fraud alert), not for every topic in the system by default.
+
+## Ingestion, transformation, orchestration
+
+Every pipeline — batch or streaming — still breaks down into the same three
+stages; only the tools and latency budget change.
+
+| Stage | Purpose | Typical tools |
+|---|---|---|
+| **Ingestion** | Pull raw data from external systems into central storage | Apache Kafka, Debezium, Fivetran, AWS Kinesis |
+| **Transformation** | Clean, filter, and structure the raw data | Apache Spark, dbt, PySpark, Pandas |
+| **Orchestration** | Schedule tasks, manage dependencies, handle errors across the whole system | Apache Airflow, Prefect, Dagster |
+
+Ingestion is the vacuum cleaner gathering raw material; transformation is the
+factory turning it into a usable product; orchestration is the conductor
+making sure every stage runs in the right order and recovers cleanly when
+something fails.
+
+## Lab: a real-time streaming pipeline with Kafka and Delta Lake
+
+The [Day 2 lab notebook](Day2_Lab.ipynb) puts every concept above into one
+runnable pipeline, in two parts.
+
+**Part 1 — mock Kafka streaming pipeline.** A `MockKafkaBroker` (built on
+`asyncio.Queue`, with partitions and offsets modeled explicitly) receives
+readings from three concurrent factory-sensor producers
+(`CNC_MILL_01`, `ROBOTIC_ARM_02`, `ASSEMBLY_LINE_03`). A `StreamProcessor`
+consumes them and applies all three concepts from this page at once: a
+tumbling window (per-second event counts), a sliding window (a 3-second
+rolling average), and a watermark (dropping anything older than 2 seconds).
+Anything over threshold gets published to an `anomalies_sink` topic, which a
+Delta Lake writer appends transactionally — the same ACID guarantees from
+Day 1, now on a live stream instead of a static file.
+
+**Part 2 — a real Kafka round trip.** The mock broker never touches the
+actual `kafka-python` client, and a real capstone pipeline needs schema
+validation at the edge. This part runs one real `KafkaProducer` →
+topic → `KafkaConsumer` round trip, gated by a Pydantic model
+(`SensorReading`) that rejects a deliberately malformed message (a
+`temperature` sent as the string `"not_a_number"`) instead of letting it crash
+the consumer.
+
+::: {.callout-note}
+Running Part 1's Delta sink locally on Windows requires a `winutils.exe` /
+`HADOOP_HOME` setup for PySpark — a standard PySpark-on-Windows limitation,
+not a bug in the notebook (see the same caveat on
+[Day 1](../L01/01_lakehouse_architectures.qmd)). It runs cleanly on Colab
+(Linux) or macOS/Linux with no extra setup. The notebook's own saved output
+for Part 1 was captured from a real executed run on Colab.
+:::
+
+::: {.callout-note}
+Part 2 needs a real, running Kafka broker on `localhost:9092` — the notebook
+includes the commands to start a local single-broker Kafka directly in Colab
+(KRaft mode, no Zookeeper needed). The output saved in this notebook was
+captured from a real run in an environment with `kafka-python` and `pydantic`
+installed but **no broker listening** — which is exactly what you'll see if
+you run this cell without first starting Kafka: the schema-gate code catches
+the failure and prints clear setup instructions instead of a raw stack trace,
+rather than crashing. To see the full accept/reject round trip (two valid
+readings accepted, one malformed reading rejected by `SensorReading`'s
+validator), start the broker first, per the notebook's own instructions.
+:::

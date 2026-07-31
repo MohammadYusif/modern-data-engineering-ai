@@ -1,0 +1,47 @@
+---
+title: "Day 4 — Data Quality, Governance, and Lineage"
+format: html
+---
+
+By Day 3 your pipelines move data — ingested, landed in bronze/silver/gold,
+served to a RAG index or a model. But moving data and moving *trustworthy*
+data are different problems. A pipeline can run green every single day, throw
+no exceptions, miss no SLA, and still be quietly wrong: a schema drifts, a
+source starts sending 25% nulls in a column nobody's watching, a duplicate
+customer row skews a training set. Nothing crashes. The dashboard just starts
+lying, and the model just starts learning the wrong thing.
+
+Today is about closing that gap. We look at the three pillars that turn a
+pipeline that merely *runs* into one that can be **trusted, audited, and
+debugged**:
+
+- **Data quality** — automated rules that continuously check dimensions like
+  accuracy, completeness, and consistency, so bad records are caught at the
+  door instead of downstream in a model's output.
+- **Governance** — the human policies, ownership rules, and compliance
+  boundaries (GDPR, HIPAA, internal classification schemes) that decide who
+  may touch what data and how long it may be kept, increasingly enforced by
+  automated control planes rather than a wiki page nobody reads.
+- **Lineage** — the connective tissue. It answers "where did this number come
+  from, and what breaks if I change this table?" by tracing data's exact
+  journey from source to dashboard.
+
+None of these three work in isolation. A validation rule without governance
+has no owner to alert when it fires. A governance policy without lineage
+can't tell you what a schema change will actually break. Together they turn
+raw, ungoverned data into an audited, secure, reliable asset — the same
+asset an AI system needs in order to be trusted with real decisions.
+
+## Subtopics for today
+
+1. Data quality principles, validation techniques, and data contracts
+2. Automated data governance frameworks
+3. Lineage and data observability
+4. Enterprise governance policies
+5. **Hands-on lab:** automated data quality gates on a real, messy e-commerce
+   dataset
+
+Read [Data Quality: Principles, Validation, and Contracts](01_data_quality_principles.qmd),
+then [Automated Governance and Enterprise Policy](02_governance_frameworks.qmd),
+then [Lineage and Data Observability](03_lineage_and_observability.qmd), and
+finish with the [lab notebook](Day4_Lab.ipynb).

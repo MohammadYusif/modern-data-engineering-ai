@@ -1,0 +1,183 @@
+---
+title: "The Unified Architecture"
+format: html
+---
+
+## From five separate labs to one platform
+
+Every architecture diagram you've seen this week showed one slice of the
+system in isolation. In production none of those slices run alone — a
+lakehouse with nothing feeding it is empty, a vector index with nothing
+governing its source data is a liability, and a quality gate that nobody
+wired into the pipeline is just a notebook cell. Enterprises that build AI
+platforms combine all of it into a single ecosystem that can, at scale:
+
+- Collect data
+- Process data
+- Store data
+- Govern data
+- Retrieve knowledge
+- Power AI applications
+- Deliver real-time intelligence
+
+That list is the whole week, restated as one pipeline. The rest of this page
+is that pipeline made concrete.
+
+## The reference architecture
+
+```{mermaid}
+graph TD
+    A["Data Sources<br>APIs · IoT · ERP · CRM · Files"] --> B
+    B["Real-Time Data Pipelines<br>Kafka / Spark / Flink / Airflow"] --> C
+    C["Data Quality &amp; Validation Layer"] --> D
+    D["Governance &amp; Security Layer<br>Access · Policies · Compliance"] --> E
+    E["Modern Data Architecture<br>Lakehouse / Warehouse / Mesh"] --> F
+    F["Embedding &amp; Vectorization Layer"] --> G
+    G["Vector Database<br>ChromaDB / Pinecone / Weaviate"] --> H
+    H["Advanced RAG System<br>Retrieval + Re-ranking + LLMs"] --> I
+    I["AI Applications &amp; Agents"]
+```
+
+Every box in that diagram is something you already built this week:
+
+| Layer | What it is | Where you built it |
+|---|---|---|
+| Real-Time Data Pipelines | Streaming ingestion with schema validation at the door | Day 2 |
+| Data Quality & Validation | Automated checks before bad data reaches production | Day 4 |
+| Governance & Security | Access policies, compliance, lineage tracking | Day 4 |
+| Modern Data Architecture | Bronze/Silver/Gold lakehouse with ACID guarantees | Day 1 |
+| Embedding & Vectorization / Vector DB | Chunking, embeddings, similarity search | Day 3 |
+| Advanced RAG System | Retrieval + reranking + LLM response generation | Day 3 |
+
+The architectural insight isn't any single box — it's the **order and the
+gating**. Data quality sits *before* governance, and governance sits *before*
+storage, because a system that governs or stores bad data has already failed;
+catching it earlier is strictly cheaper. RAG serving sits at the very end,
+downstream of everything else, because a RAG answer is only as trustworthy as
+the governed, quality-checked data it was indexed from — this is the direct,
+practical answer to Day 3's question of why RAG systems hallucinate: they
+retrieve from whatever they were given, so if the retrieval corpus was never
+quality-gated, the model will confidently ground its answer in garbage.
+
+## How the components work together, step by step
+
+Walking the diagram top to bottom as a single request's journey:
+
+**Step 1 — Data ingestion.** Real-time pipelines collect events from APIs,
+IoT devices, operational databases (via CDC), documents, and other
+enterprise systems, and land them on a topic — this is Day 2's Kafka
+producer/consumer model.
+
+**Step 2 — Data quality validation.** Automated checks validate schema
+correctness, missing fields, duplicate records, and invalid values before
+anything is allowed further downstream. Bad data is blocked here, not
+discovered later in a dashboard — this is Day 4's quality gate.
+
+**Step 3 — Governance enforcement.** Governance systems apply access
+policies, enforce security boundaries, track lineage, and monitor
+compliance. This is also Day 4, and it's why lineage exists: a governance
+rule with no lineage trail can't tell you what a policy change will actually
+affect.
+
+**Step 4 — Data storage.** Validated, governed data lands in the lakehouse —
+bronze (raw), silver (cleansed), gold (aggregated) — using the Delta Lake
+ACID guarantees, `MERGE`, and schema enforcement from Day 1.
+
+**Step 5 — Embedding generation.** Documents and records are converted into
+vector embeddings using an embedding model (Day 3's sentence-transformers or
+equivalent).
+
+**Step 6 — Vector storage.** Those embeddings are persisted in a vector
+database (Chroma, Pinecone, Weaviate) for similarity search.
+
+**Step 7 — RAG retrieval.** AI systems retrieve the relevant enterprise
+knowledge semantically, rather than relying on keyword search alone.
+
+**Step 8 — AI response generation.** An LLM generates a response grounded in
+the retrieved context — the payoff of every layer beneath it having done its
+job correctly.
+
+## Recommended technology stack
+
+The slide deck's stack-by-layer table is a reasonable default if you're
+choosing tools for a real deployment (not everything on it is required for
+this course's capstone — see [The Final Project](02_final_project.qmd) for
+what's actually graded):
+
+| Layer | Recommended technologies |
+|---|---|
+| Data Pipelines | Kafka, Spark, Flink |
+| Storage | Databricks, Snowflake (or open Delta Lake / Iceberg on cloud object storage) |
+| Quality | Great Expectations |
+| Governance | Collibra, Purview |
+| Embeddings | Sentence Transformers |
+| Vector DB | Pinecone, ChromaDB |
+| RAG | LangChain, LlamaIndex |
+| LLMs | GPT, Qwen, Claude |
+
+## Orchestrating the platform
+
+None of the layers above wire themselves together. **AI infrastructure
+orchestration** is the automated coordination of compute, storage,
+networking, and AI services so the pipeline above runs reliably, efficiently,
+and at scale — the conductor making sure ingestion, quality gating, storage,
+embedding, and serving each run at the right time without stepping on each
+other.
+
+### Workflow orchestration: the DAG
+
+The tool most directly relevant to this week's labs is **Apache Airflow**,
+which models a pipeline as a **DAG** (Directed Acyclic Graph) — tasks as
+nodes, dependencies as edges, executed in topological order:
+
+- **Operators** are the task types: `PythonOperator`, `BashOperator`,
+  `SparkSubmitOperator`, `S3KeySensor`, `HttpSensor`.
+- **Key configuration:** `schedule_interval` (cron expression), `start_date`,
+  `retries`, `retry_delay`, `catchup=False` (don't backfill every missed run
+  since `start_date`).
+- **XCom** is a lightweight key-value store for passing data *between* tasks
+  — keep it small (row counts, file paths, IDs), never whole DataFrames.
+- **`BranchPythonOperator`** returns the `task_id` to run next, enabling
+  conditional pipeline paths — exactly the "if quality gate fails, quarantine
+  instead of serving" branch the capstone's Module 5 already models.
+- **Best practice:** one DAG per pipeline, idempotent tasks (safe to re-run
+  without duplicating side effects), and a sensor for every external
+  dependency instead of a fixed sleep/wait.
+
+### Beyond workflows: the other orchestration layers
+
+At real enterprise scale, "orchestration" splits into more than just DAG
+scheduling. This is background context for how the tools you used this week
+get operated in production — not something the capstone requires you to
+stand up:
+
+| Orchestration layer | Manages | Example tools |
+|---|---|---|
+| Compute | GPU/CPU allocation across workloads | Kubernetes, Kueue, Volcano, Karpenter |
+| Workflow | Multi-step pipeline dependencies | Airflow, Prefect, Dagster, Temporal |
+| Model | Embedding models, rerankers, LLMs in production | vLLM, Triton, BentoML, Ray Serve |
+| Vector DB | Index rebuilds, shard rebalancing, backups | Coordinated with the data lake's own backup schedule |
+| Data | Movement and quality across pipeline stages | Kafka, dbt, Great Expectations, dlt |
+
+Without this coordination, the failure modes are concrete: a GPU training job
+starves a vector DB of latency budget, an embedding job starts before its
+upstream chunks are ready, scaling requires slow manual provisioning, one
+pipeline failure takes down the whole system instead of retrying in
+isolation, and a version upgrade breaks consumers mid-pipeline instead of
+rolling out as a canary. Orchestration exists specifically to turn each of
+those into an automated, recoverable non-event.
+
+## Why integration is the point
+
+A fully integrated platform is what moves an enterprise from an AI prototype
+to production: real-time streaming, governance compliance, automated data
+validation, and semantic RAG search working as one system instead of four
+disconnected demos. That combination is what delivers **fast, safe, and
+reliable** AI applications at scale — better AI accuracy because the RAG
+layer only ever sees governed, quality-checked data; fewer hallucinations
+because responses are grounded in a trusted corpus, not whatever happened to
+be lying around; and governance and compliance enforced automatically instead
+of depending on someone remembering a policy.
+
+The [final project](02_final_project.qmd) is where you build exactly this,
+end to end, for a real (if intentionally small) dataset.
