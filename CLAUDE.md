@@ -195,6 +195,24 @@ fragments resolve, external URLs return non-error status.
   block. After any scripted YAML edit, re-read the whole block, not just the
   line you targeted.
 
+## A lab that writes local persistent state may leak it on Windows, not on Colab
+
+Found adding L03's `PersistentClient`/metadata-filtering demo: `del client, collection`
+plus `gc.collect()` does **not** reliably release a SQLite file handle on Windows,
+so `shutil.rmtree(persist_dir, ignore_errors=True)` silently fails to remove the
+directory afterward (the `ignore_errors=True` masks it completely — no exception,
+just a leftover folder). This is Windows-specific: POSIX (Colab, Linux, macOS —
+what every student actually runs on) allows unlinking a directory entry while a
+process still holds a file inside it open, so the exact same cell cleans up fine
+there. Re-running the cell doesn't break correctness (verified: a second run with
+the stale directory still present produces the same correct output), so this
+isn't a bug students will ever see — but it does mean **testing a lab that writes
+local persistent files on this Windows trainer machine will leave real
+directories on disk that must not get committed.** Add anything a lab writes to
+disk (a Chroma/Delta/Kafka-log directory, a checkpoint folder) to `.gitignore`
+defensively, and don't trust `del` + `gc.collect()` as proof of cleanup on
+Windows — check with `ls`/`Test-Path` after running, not just by reading the code.
+
 ## Keep the `.qmd` lesson and its lab notebook in sync
 
 When actually running a lab notebook surfaces something the slide-derived

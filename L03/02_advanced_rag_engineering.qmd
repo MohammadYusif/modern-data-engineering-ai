@@ -305,11 +305,21 @@ cross-encoder reranking, RAG prompt construction, and RAGAS-style precision
 and similarity evaluation — all on a real, executed run using local,
 free components (no hosted vector DB, no paid embeddings API, no GPU).
 
+It also demonstrates the two things that make ChromaDB a *database* rather
+than just an in-memory index: writing to a `PersistentClient`, dropping the
+handle, reopening from disk with zero re-embedding, and narrowing a query
+with `where={"doc_id": ...}` metadata filtering before similarity ranking
+ever runs — the same mechanism a real multi-tenant or access-controlled RAG
+system uses to keep one customer's documents out of another's results.
+
 What to look for in the output:
 
 - Candidate counts moving through each stage — vector search, BM25 search,
   RRF fusion — for four different queries against the same eight-document
   knowledge base.
+- The persistence demo: a chunk count that survives reopening the database
+  from disk, and a metadata-filtered query returning fewer candidates, all
+  from one `doc_id`.
 - The cross-encoder reranking step narrowing the fused candidates down to
   the top 3, with each surviving chunk's text printed.
 - The final RAG prompt assembled from the top reranked chunks, plus the

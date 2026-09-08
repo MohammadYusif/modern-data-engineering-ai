@@ -4,3 +4,8 @@
 Thumbs.db
 
 **/*.quarto_ipynb
+
+# Local scratch state a lab notebook writes when run/tested on this machine
+# (e.g. L03's PersistentClient persistence demo) - ephemeral in the actual
+# Colab runtime students use, never meant to be tracked.
+**/chroma_persist_demo/
