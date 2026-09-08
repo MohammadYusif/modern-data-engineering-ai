@@ -992,15 +992,18 @@ Requirement already satisfied: typing-inspection&gt;=0.4.2 in c:\users\fdasg\app
 <span id="cb19-88"><a href="#cb19-88" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"then re-run this cell. Part 1 above (the mock-broker pipeline)"</span>)</span>
 <span id="cb19-89"><a href="#cb19-89" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"still works without Kafka running."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-20" class="cell" data-execution_count="3">
+<div id="cell-20" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>main()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Real Kafka round trip (topic: factory_sensors_raw)
+  [PRODUCER] sent -&gt; {'machine_id': 'CNC_MILL_01', 'temperature': 71.4, 'event_ts': '2026-06-29T10:00:00Z'}
+  [PRODUCER] sent -&gt; {'machine_id': 'ROBOTIC_ARM_02', 'temperature': 68.9, 'event_ts': '2026-06-29T10:00:01Z'}
+  [PRODUCER] sent -&gt; {'machine_id': 'ASSEMBLY_LINE_03', 'temperature': 'not_a_number', 'event_ts': '2026-06-29T10:00:02Z'}
+  [CONSUMER] accepted @offset 0: machine_id='CNC_MILL_01' temperature=71.4 event_ts='2026-06-29T10:00:00Z'
+  [CONSUMER] accepted @offset 1: machine_id='ROBOTIC_ARM_02' temperature=68.9 event_ts='2026-06-29T10:00:01Z'
+  [CONSUMER] REJECTED @offset 2: Input should be a valid number, unable to parse string as a number
 
-Could not reach Kafka at localhost:9092: KafkaTimeoutError: Unable to bootstrap from localhost:9092
-Start a local broker first (see the docker run command in this file's docstring),
-then re-run this cell. Part 1 above (the mock-broker pipeline)
-still works without Kafka running.</code></pre>
+  Summary: 2 accepted, 1 rejected by the schema gate.</code></pre>
 </div>
 </div>
 
