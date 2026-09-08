@@ -49,9 +49,9 @@ ul.task-list li input[type="checkbox"] {
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-0944b910a2fba5e745fe8cb6da1db39f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-ab6ae2130d4336415d9ad8fde3bc8297.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-0944b910a2fba5e745fe8cb6da1db39f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-1c0535d037eb8813b585731018da8aa3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-58ab367351ca0b6c12c83690c01679c0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-1c0535d037eb8813b585731018da8aa3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -885,9 +885,11 @@ Chunk 3: [K L M N O P Q]   ← overlaps by 2 tokens (K, L)</code></pre>
 <section id="lab-building-an-advanced-rag-system" class="level2">
 <h2 class="anchored" data-anchor-id="lab-building-an-advanced-rag-system">Lab: building an advanced RAG system</h2>
 <p>The <a href="../L03/Day3_Lab.html">Day 3 lab notebook</a> implements this entire pipeline end to end over a small built-in knowledge base of data-engineering documents (Kafka, Delta Lake, RAG, HNSW, hybrid search): document chunking, a ChromaDB vector index (HNSW backend), BM25 keyword search, RRF hybrid fusion, cross-encoder reranking, RAG prompt construction, and RAGAS-style precision and similarity evaluation — all on a real, executed run using local, free components (no hosted vector DB, no paid embeddings API, no GPU).</p>
+<p>It also demonstrates the two things that make ChromaDB a <em>database</em> rather than just an in-memory index: writing to a <code>PersistentClient</code>, dropping the handle, reopening from disk with zero re-embedding, and narrowing a query with <code>where={"doc_id": ...}</code> metadata filtering before similarity ranking ever runs — the same mechanism a real multi-tenant or access-controlled RAG system uses to keep one customer’s documents out of another’s results.</p>
 <p>What to look for in the output:</p>
 <ul>
 <li>Candidate counts moving through each stage — vector search, BM25 search, RRF fusion — for four different queries against the same eight-document knowledge base.</li>
+<li>The persistence demo: a chunk count that survives reopening the database from disk, and a metadata-filtered query returning fewer candidates, all from one <code>doc_id</code>.</li>
 <li>The cross-encoder reranking step narrowing the fused candidates down to the top 3, with each surviving chunk’s text printed.</li>
 <li>The final RAG prompt assembled from the top reranked chunks, plus the retrieval metrics (<code>context_precision</code>, <code>avg_similarity</code>) and a pass/fail quality read-out, printed for every query.</li>
 </ul>

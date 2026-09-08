@@ -84,9 +84,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-0944b910a2fba5e745fe8cb6da1db39f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-ab6ae2130d4336415d9ad8fde3bc8297.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-0944b910a2fba5e745fe8cb6da1db39f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-1c0535d037eb8813b585731018da8aa3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-58ab367351ca0b6c12c83690c01679c0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-1c0535d037eb8813b585731018da8aa3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -572,95 +572,632 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="day-3-vector-databases-and-advanced-rag-engineering" class="level1">
 <h1>Day 3 — Vector Databases and Advanced RAG Engineering</h1>
 <p>Full RAG pipeline: document chunking → ChromaDB (HNSW) → BM25 → RRF hybrid search → cross-encoder reranking → RAGAS-style evaluation.</p>
-<div id="cell-2" class="cell" data-execution_count="1">
+<div id="d643cda1" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:28:48.261040Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:28:48.261040Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:28:50.318438Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:28:50.318438Z&quot;}}" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install chromadb sentence<span class="op">-</span>transformers rank<span class="op">-</span>bm25 numpy</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Requirement already satisfied: chromadb in c:\users\fdasg\appdata\roaming\python\python312\site-packages (1.5.9)
+Requirement already satisfied: sentence-transformers in c:\users\fdasg\appdata\roaming\python\python312\site-packages (5.6.1)
+Requirement already satisfied: rank-bm25 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (0.2.2)
+Requirement already satisfied: numpy in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (2.5.1)
+Requirement already satisfied: build&gt;=1.0.3 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (1.5.0)
+Requirement already satisfied: pydantic&gt;=2.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from chromadb) (2.13.4)
+Requirement already satisfied: pydantic-settings&gt;=2.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (2.14.2)
+Requirement already satisfied: pybase64&gt;=1.4.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (1.4.3)
+Requirement already satisfied: uvicorn&gt;=0.18.3 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from uvicorn[standard]&gt;=0.18.3-&gt;chromadb) (0.52.0)
+Requirement already satisfied: typing-extensions&gt;=4.5.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from chromadb) (4.16.0)
+Requirement already satisfied: onnxruntime&gt;=1.14.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (1.28.0)
+Requirement already satisfied: opentelemetry-api&gt;=1.2.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (1.44.0)
+Requirement already satisfied: opentelemetry-exporter-otlp-proto-grpc&gt;=1.2.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (1.44.0)
+Requirement already satisfied: opentelemetry-sdk&gt;=1.2.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (1.44.0)
+Requirement already satisfied: tokenizers&gt;=0.13.2 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (0.22.2)
+Requirement already satisfied: pypika&gt;=0.48.9 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from chromadb) (0.51.1)
+Requirement already satisfied: tqdm&gt;=4.65.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from chromadb) (4.70.0)
+Requirement already satisfied: overrides&gt;=7.3.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (7.7.0)
+Requirement already satisfied: importlib-resources in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (7.1.0)
+Requirement already satisfied: grpcio&gt;=1.58.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (1.83.0)
+Requirement already satisfied: bcrypt&gt;=4.0.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (5.0.0)
+Requirement already satisfied: typer&gt;=0.9.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (0.27.0)
+Requirement already satisfied: kubernetes&gt;=28.1.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (36.0.3)
+Requirement already satisfied: tenacity&gt;=8.2.3 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from chromadb) (9.1.4)
+Requirement already satisfied: pyyaml&gt;=6.0.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from chromadb) (6.0.3)
+Requirement already satisfied: mmh3&gt;=4.0.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (5.2.1)
+Requirement already satisfied: orjson&gt;=3.9.12 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (3.11.9)
+Requirement already satisfied: httpx&gt;=0.27.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (0.28.1)
+Requirement already satisfied: rich&gt;=10.11.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (15.0.0)
+Requirement already satisfied: jsonschema&gt;=4.19.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from chromadb) (4.26.0)
+Requirement already satisfied: transformers&lt;6.0.0,&gt;=4.41.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from sentence-transformers) (5.14.1)
+Requirement already satisfied: huggingface-hub&gt;=0.23.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from sentence-transformers) (1.26.0)
+Requirement already satisfied: torch&gt;=1.11.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from sentence-transformers) (2.13.0)
+Requirement already satisfied: scikit-learn&gt;=0.22.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from sentence-transformers) (1.9.0)
+Requirement already satisfied: scipy&gt;=1.0.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from sentence-transformers) (1.18.0)
+Requirement already satisfied: packaging&gt;=24.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from build&gt;=1.0.3-&gt;chromadb) (26.2)
+Requirement already satisfied: pyproject_hooks in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from build&gt;=1.0.3-&gt;chromadb) (1.2.0)
+Requirement already satisfied: colorama in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from build&gt;=1.0.3-&gt;chromadb) (0.4.6)
+Requirement already satisfied: anyio in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from httpx&gt;=0.27.0-&gt;chromadb) (4.14.2)
+Requirement already satisfied: certifi in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from httpx&gt;=0.27.0-&gt;chromadb) (2026.7.22)
+Requirement already satisfied: httpcore==1.* in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from httpx&gt;=0.27.0-&gt;chromadb) (1.0.9)
+Requirement already satisfied: idna in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from httpx&gt;=0.27.0-&gt;chromadb) (3.18)
+Requirement already satisfied: h11&gt;=0.16 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from httpcore==1.*-&gt;httpx&gt;=0.27.0-&gt;chromadb) (0.16.0)
+Requirement already satisfied: click&lt;9.0.0,&gt;=8.4.2 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from huggingface-hub&gt;=0.23.0-&gt;sentence-transformers) (8.4.2)
+Requirement already satisfied: filelock&gt;=3.10.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from huggingface-hub&gt;=0.23.0-&gt;sentence-transformers) (3.32.2)
+Requirement already satisfied: fsspec&gt;=2023.5.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from huggingface-hub&gt;=0.23.0-&gt;sentence-transformers) (2026.7.0)
+Requirement already satisfied: hf-xet&lt;2.0.0,&gt;=1.5.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from huggingface-hub&gt;=0.23.0-&gt;sentence-transformers) (1.5.2)
+Requirement already satisfied: attrs&gt;=22.2.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from jsonschema&gt;=4.19.0-&gt;chromadb) (26.1.0)
+Requirement already satisfied: jsonschema-specifications&gt;=2023.03.6 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from jsonschema&gt;=4.19.0-&gt;chromadb) (2025.9.1)
+Requirement already satisfied: referencing&gt;=0.28.4 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from jsonschema&gt;=4.19.0-&gt;chromadb) (0.37.0)
+Requirement already satisfied: rpds-py&gt;=0.25.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from jsonschema&gt;=4.19.0-&gt;chromadb) (2026.6.3)
+Requirement already satisfied: six&gt;=1.9.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from kubernetes&gt;=28.1.0-&gt;chromadb) (1.17.0)
+Requirement already satisfied: python-dateutil&gt;=2.5.3 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from kubernetes&gt;=28.1.0-&gt;chromadb) (2.9.0.post0)
+Requirement already satisfied: websocket-client!=0.40.0,!=0.41.*,!=0.42.*,&gt;=0.32.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from kubernetes&gt;=28.1.0-&gt;chromadb) (1.9.0)
+Requirement already satisfied: requests in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from kubernetes&gt;=28.1.0-&gt;chromadb) (2.34.2)
+Requirement already satisfied: requests-oauthlib in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from kubernetes&gt;=28.1.0-&gt;chromadb) (2.0.0)
+Requirement already satisfied: urllib3!=2.6.0,&gt;=1.24.2 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from kubernetes&gt;=28.1.0-&gt;chromadb) (2.7.0)
+Requirement already satisfied: durationpy&gt;=0.7 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from kubernetes&gt;=28.1.0-&gt;chromadb) (0.10)
+Requirement already satisfied: aiohttp&lt;4.0.0,&gt;=3.13.5 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from kubernetes&gt;=28.1.0-&gt;chromadb) (3.14.3)
+Requirement already satisfied: flatbuffers in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from onnxruntime&gt;=1.14.1-&gt;chromadb) (25.12.19)
+Requirement already satisfied: protobuf&gt;=4.25.8 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from onnxruntime&gt;=1.14.1-&gt;chromadb) (7.35.1)
+Requirement already satisfied: googleapis-common-protos~=1.57 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from opentelemetry-exporter-otlp-proto-grpc&gt;=1.2.0-&gt;chromadb) (1.75.0)
+Requirement already satisfied: opentelemetry-exporter-otlp-proto-common==1.44.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from opentelemetry-exporter-otlp-proto-grpc&gt;=1.2.0-&gt;chromadb) (1.44.0)
+Requirement already satisfied: opentelemetry-proto==1.44.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from opentelemetry-exporter-otlp-proto-grpc&gt;=1.2.0-&gt;chromadb) (1.44.0)
+Requirement already satisfied: opentelemetry-semantic-conventions==0.65b0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from opentelemetry-sdk&gt;=1.2.0-&gt;chromadb) (0.65b0)
+Requirement already satisfied: annotated-types&gt;=0.6.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from pydantic&gt;=2.0-&gt;chromadb) (0.8.0)
+Requirement already satisfied: pydantic-core==2.46.4 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from pydantic&gt;=2.0-&gt;chromadb) (2.46.4)
+Requirement already satisfied: typing-inspection&gt;=0.4.2 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from pydantic&gt;=2.0-&gt;chromadb) (0.4.2)
+Requirement already satisfied: python-dotenv&gt;=0.21.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from pydantic-settings&gt;=2.0-&gt;chromadb) (1.2.2)
+Requirement already satisfied: markdown-it-py&gt;=2.2.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from rich&gt;=10.11.0-&gt;chromadb) (4.2.0)
+Requirement already satisfied: pygments&lt;3.0.0,&gt;=2.13.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from rich&gt;=10.11.0-&gt;chromadb) (2.20.0)
+Requirement already satisfied: joblib&gt;=1.4.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from scikit-learn&gt;=0.22.0-&gt;sentence-transformers) (1.5.3)
+Requirement already satisfied: narwhals&gt;=2.0.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from scikit-learn&gt;=0.22.0-&gt;sentence-transformers) (2.24.0)
+Requirement already satisfied: threadpoolctl&gt;=3.5.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from scikit-learn&gt;=0.22.0-&gt;sentence-transformers) (3.6.0)
+Requirement already satisfied: setuptools&gt;=77.0.3 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from torch&gt;=1.11.0-&gt;sentence-transformers) (83.0.0)
+Requirement already satisfied: sympy&gt;=1.13.3 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from torch&gt;=1.11.0-&gt;sentence-transformers) (1.14.0)
+Requirement already satisfied: networkx&gt;=2.5.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from torch&gt;=1.11.0-&gt;sentence-transformers) (3.6.1)
+Requirement already satisfied: jinja2 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from torch&gt;=1.11.0-&gt;sentence-transformers) (3.1.6)
+Requirement already satisfied: regex&gt;=2025.10.22 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from transformers&lt;6.0.0,&gt;=4.41.0-&gt;sentence-transformers) (2026.7.19)
+Requirement already satisfied: safetensors&gt;=0.8.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from transformers&lt;6.0.0,&gt;=4.41.0-&gt;sentence-transformers) (0.8.0)
+Requirement already satisfied: shellingham&gt;=1.3.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from typer&gt;=0.9.0-&gt;chromadb) (1.5.4)
+Requirement already satisfied: annotated-doc&gt;=0.0.2 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from typer&gt;=0.9.0-&gt;chromadb) (0.0.5)
+Requirement already satisfied: httptools&gt;=0.8.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from uvicorn[standard]&gt;=0.18.3-&gt;chromadb) (0.8.0)
+Requirement already satisfied: watchfiles&gt;=0.20 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from uvicorn[standard]&gt;=0.18.3-&gt;chromadb) (1.2.0)
+Requirement already satisfied: websockets&gt;=13.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from uvicorn[standard]&gt;=0.18.3-&gt;chromadb) (15.0.1)
+Requirement already satisfied: aiohappyeyeballs&gt;=2.5.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from aiohttp&lt;4.0.0,&gt;=3.13.5-&gt;kubernetes&gt;=28.1.0-&gt;chromadb) (2.7.1)
+Requirement already satisfied: aiosignal&gt;=1.4.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from aiohttp&lt;4.0.0,&gt;=3.13.5-&gt;kubernetes&gt;=28.1.0-&gt;chromadb) (1.4.0)
+Requirement already satisfied: frozenlist&gt;=1.1.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from aiohttp&lt;4.0.0,&gt;=3.13.5-&gt;kubernetes&gt;=28.1.0-&gt;chromadb) (1.8.0)
+Requirement already satisfied: multidict&lt;7.0,&gt;=4.5 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from aiohttp&lt;4.0.0,&gt;=3.13.5-&gt;kubernetes&gt;=28.1.0-&gt;chromadb) (6.7.1)
+Requirement already satisfied: propcache&gt;=0.2.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from aiohttp&lt;4.0.0,&gt;=3.13.5-&gt;kubernetes&gt;=28.1.0-&gt;chromadb) (0.5.2)
+Requirement already satisfied: yarl&lt;2.0,&gt;=1.17.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from aiohttp&lt;4.0.0,&gt;=3.13.5-&gt;kubernetes&gt;=28.1.0-&gt;chromadb) (1.24.5)
+Requirement already satisfied: mdurl~=0.1 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from markdown-it-py&gt;=2.2.0-&gt;rich&gt;=10.11.0-&gt;chromadb) (0.1.2)
+Requirement already satisfied: mpmath&lt;1.4,&gt;=1.1.0 in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (from sympy&gt;=1.13.3-&gt;torch&gt;=1.11.0-&gt;sentence-transformers) (1.3.0)
+Requirement already satisfied: MarkupSafe&gt;=2.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from jinja2-&gt;torch&gt;=1.11.0-&gt;sentence-transformers) (3.0.3)
+Requirement already satisfied: charset_normalizer&lt;4,&gt;=2 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from requests-&gt;kubernetes&gt;=28.1.0-&gt;chromadb) (3.4.9)
+Requirement already satisfied: oauthlib&gt;=3.0.0 in c:\users\fdasg\appdata\roaming\python\python312\site-packages (from requests-oauthlib-&gt;kubernetes&gt;=28.1.0-&gt;chromadb) (3.3.1)</code></pre>
 </div>
-<div id="cell-3" class="cell" data-execution_count="2">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> reimport numpy <span class="im">as</span> npimport chromadbfrom chromadb.utils.embedding_functions <span class="im">import</span> SentenceTransformerEmbeddingFunctionfrom sentence_transformers <span class="im">import</span> SentenceTransformer, CrossEncoderfrom rank_bm25 <span class="im">import</span> BM25Okapi</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+[notice] A new release of pip is available: 25.0.1 -&gt; 26.2.1
+[notice] To update, run: python.exe -m pip install --upgrade pip</code></pre>
 </div>
-<div id="cell-4" class="cell" data-execution_count="3">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# KNOWLEDGE BASE — Eight data-engineering documents</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-5" class="cell" data-execution_count="4">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================DOCUMENTS = [    {        "id":   "doc_001",        "text": (            "Apache Kafka is a distributed event streaming platform. "            "It uses partitions and offsets to guarantee message ordering "            "within a partition. Consumer groups allow multiple consumers "            "to read the same topic in parallel — each partition goes to "            "exactly one group member. Adding consumers beyond the partition "            "count yields no additional throughput."        ),    },    {        "id":   "doc_002",        "text": (            "Delta Lake is an open-source storage layer that brings ACID "            "transactions to Apache Spark. The transaction log (.delta_log) "            "records every commit as a JSON file. Readers replay the log from "            "version 0 to reconstruct the current table state. VACUUM removes "            "old Parquet files once they fall outside the retention window."        ),    },    {        "id":   "doc_003",        "text": (            "Retrieval-Augmented Generation (RAG) combines information retrieval "            "with large language model generation. The retriever finds relevant "            "chunks from a vector database using semantic similarity. The LLM "            "then generates an answer grounded in those retrieved chunks, "            "significantly reducing hallucination compared to pure generation."        ),    },    {        "id":   "doc_004",        "text": (            "HNSW (Hierarchical Navigable Small World) is the graph-based "            "approximate nearest-neighbour index used inside ChromaDB, Pinecone, "            "and Weaviate. The M parameter controls bi-directional links per node. "            "ef_construction sets the candidate list size at index build time. "            "ef (search) controls recall vs latency at query time — higher ef "            "means better recall but slower queries."        ),    },    {        "id":   "doc_005",        "text": (            "Hybrid search combines vector semantic search with BM25 keyword "            "search. Reciprocal Rank Fusion (RRF) merges both result lists: "            "score = Σ 1/(k + rank_i), where k=60 is the standard constant. "            "RRF is parameter-free and consistently outperforms a weighted "            "linear combination. Most vector databases expose hybrid search natively."        ),    },    {        "id":   "doc_006",        "text": (            "Cross-encoder reranking is a two-stage retrieval pattern. Stage 1: "            "the bi-encoder retrieves the top-50 candidates quickly using "            "independent query and document embeddings. Stage 2: the cross-encoder "            "scores each (query, document) pair jointly — far more accurate because "            "it sees the full interaction. The top-3 to top-5 reranked results "            "are passed to the LLM as context."        ),    },    {        "id":   "doc_007",        "text": (            "RAG evaluation requires four metrics. Context Precision: are the "            "retrieved chunks actually relevant? Context Recall: were all needed "            "chunks retrieved? Answer Faithfulness: does the answer stay within "            "the retrieved context (no hallucination)? Answer Relevance: does "            "the answer address the user question? RAGAS is the standard "            "open-source framework that computes all four automatically."        ),    },    {        "id":   "doc_008",        "text": (            "Data contracts define the schema and SLA between a data producer "            "and its consumers. Pydantic v2 enforces contracts in Python using "            "strict type checking (ConfigDict(strict=True)). dbt supports "            "enforced: true in model YAML to fail the build if a column type "            "or name drifts from the declared contract specification."        ),    },]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="e7f2010a" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:28:50.319601Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:28:50.319601Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.362141Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.362141Z&quot;}}" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> chromadb</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> chromadb.utils.embedding_functions <span class="im">import</span> SentenceTransformerEmbeddingFunction</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sentence_transformers <span class="im">import</span> SentenceTransformer, CrossEncoder</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rank_bm25 <span class="im">import</span> BM25Okapi</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>C:\Users\fdasg\AppData\Local\Programs\Python\Python312\Lib\site-packages\tqdm\auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm</code></pre>
 </div>
-<div id="cell-6" class="cell" data-execution_count="5">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# STAGE 1 — CHUNKING (sentence-level with overlap)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-7" class="cell" data-execution_count="6">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================def chunk_documents(docs: list[dict], chunk_size: int = 2) -&gt; list[dict]:    """    Splits each document into overlapping sentence chunks.    chunk_size = 2 means each chunk contains 2 consecutive sentences.    Overlap of 1 sentence ensures context is not lost at chunk boundaries.    """    all_chunks = []    for doc in docs:        sentences = re.split(r"(?&lt;=[.!?])\s+", doc["text"].strip())        for i in range(0, len(sentences), max(1, chunk_size - 1)):            chunk_text = " ".join(sentences[i : i + chunk_size])            if not chunk_text.strip():                continue            all_chunks.append({                "id":     f"{doc['id']}_chunk_{i:03d}",                "text":   chunk_text,                "doc_id": doc["id"],            })    return all_chunks</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="87f877fa" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.364887Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.364887Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.368664Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.368664Z&quot;}}" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># KNOWLEDGE BASE — Eight data-engineering documents</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-8" class="cell" data-execution_count="7">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# STAGE 2 — VECTOR INDEX (ChromaDB + SentenceTransformer bi-encoder)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fc3ef130" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.370297Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.370297Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.377728Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.377053Z&quot;}}" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>DOCUMENTS <span class="op">=</span> [</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>:   <span class="st">"doc_001"</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"text"</span>: (</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Apache Kafka is a distributed event streaming platform. "</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"It uses partitions and offsets to guarantee message ordering "</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">"within a partition. Consumer groups allow multiple consumers "</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>            <span class="st">"to read the same topic in parallel — each partition goes to "</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>            <span class="st">"exactly one group member. Adding consumers beyond the partition "</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>            <span class="st">"count yields no additional throughput."</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>:   <span class="st">"doc_002"</span>,</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"text"</span>: (</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Delta Lake is an open-source storage layer that brings ACID "</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            <span class="st">"transactions to Apache Spark. The transaction log (.delta_log) "</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>            <span class="st">"records every commit as a JSON file. Readers replay the log from "</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>            <span class="st">"version 0 to reconstruct the current table state. VACUUM removes "</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>            <span class="st">"old Parquet files once they fall outside the retention window."</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>:   <span class="st">"doc_003"</span>,</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">"text"</span>: (</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Retrieval-Augmented Generation (RAG) combines information retrieval "</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>            <span class="st">"with large language model generation. The retriever finds relevant "</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>            <span class="st">"chunks from a vector database using semantic similarity. The LLM "</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>            <span class="st">"then generates an answer grounded in those retrieved chunks, "</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>            <span class="st">"significantly reducing hallucination compared to pure generation."</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>:   <span class="st">"doc_004"</span>,</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>        <span class="st">"text"</span>: (</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>            <span class="st">"HNSW (Hierarchical Navigable Small World) is the graph-based "</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>            <span class="st">"approximate nearest-neighbour index used inside ChromaDB, Pinecone, "</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>            <span class="st">"and Weaviate. The M parameter controls bi-directional links per node. "</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>            <span class="st">"ef_construction sets the candidate list size at index build time. "</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>            <span class="st">"ef (search) controls recall vs latency at query time — higher ef "</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>            <span class="st">"means better recall but slower queries."</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>:   <span class="st">"doc_005"</span>,</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>        <span class="st">"text"</span>: (</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Hybrid search combines vector semantic search with BM25 keyword "</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>            <span class="st">"search. Reciprocal Rank Fusion (RRF) merges both result lists: "</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>            <span class="st">"score = Σ 1/(k + rank_i), where k=60 is the standard constant. "</span></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>            <span class="st">"RRF is parameter-free and consistently outperforms a weighted "</span></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>            <span class="st">"linear combination. Most vector databases expose hybrid search natively."</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>:   <span class="st">"doc_006"</span>,</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>        <span class="st">"text"</span>: (</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Cross-encoder reranking is a two-stage retrieval pattern. Stage 1: "</span></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>            <span class="st">"the bi-encoder retrieves the top-50 candidates quickly using "</span></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>            <span class="st">"independent query and document embeddings. Stage 2: the cross-encoder "</span></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>            <span class="st">"scores each (query, document) pair jointly — far more accurate because "</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>            <span class="st">"it sees the full interaction. The top-3 to top-5 reranked results "</span></span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>            <span class="st">"are passed to the LLM as context."</span></span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>:   <span class="st">"doc_007"</span>,</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>        <span class="st">"text"</span>: (</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>            <span class="st">"RAG evaluation requires four metrics. Context Precision: are the "</span></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>            <span class="st">"retrieved chunks actually relevant? Context Recall: were all needed "</span></span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>            <span class="st">"chunks retrieved? Answer Faithfulness: does the answer stay within "</span></span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>            <span class="st">"the retrieved context (no hallucination)? Answer Relevance: does "</span></span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>            <span class="st">"the answer address the user question? RAGAS is the standard "</span></span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>            <span class="st">"open-source framework that computes all four automatically."</span></span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>:   <span class="st">"doc_008"</span>,</span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>        <span class="st">"text"</span>: (</span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Data contracts define the schema and SLA between a data producer "</span></span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>            <span class="st">"and its consumers. Pydantic v2 enforces contracts in Python using "</span></span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>            <span class="st">"strict type checking (ConfigDict(strict=True)). dbt supports "</span></span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>            <span class="st">"enforced: true in model YAML to fail the build if a column type "</span></span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>            <span class="st">"or name drifts from the declared contract specification."</span></span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-9" class="cell" data-execution_count="8">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================def build_vector_index(chunks: list[dict]) -&gt; chromadb.Collection:    """    Embeds all chunks with all-MiniLM-L6-v2 and stores them in ChromaDB.    ChromaDB uses HNSW internally — the same index type as Pinecone/Weaviate.    """    print("\n📦 Building ChromaDB vector index...")    ef = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")    client     = chromadb.Client()    collection = client.get_or_create_collection(        "rag_lab_knowledge_base", embedding_function=ef    )    collection.add(        ids       = [c["id"]   for c in chunks],        documents = [c["text"] for c in chunks],        metadatas = [{"doc_id": c["doc_id"]} for c in chunks],    )    print(f"   ✅ {len(chunks)} chunks indexed (HNSW backend, all-MiniLM-L6-v2 embeddings)")    return collection</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="92c1ab62" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.379414Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.379414Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.384819Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.383720Z&quot;}}" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STAGE 1 — CHUNKING (sentence-level with overlap)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-10" class="cell" data-execution_count="9">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# STAGE 3 — BM25 KEYWORD INDEX</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="ebd834ba" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.386435Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.386435Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.394535Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.393518Z&quot;}}" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> chunk_documents(docs: <span class="bu">list</span>[<span class="bu">dict</span>], chunk_size: <span class="bu">int</span> <span class="op">=</span> <span class="dv">2</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">dict</span>]:</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Splits each document into overlapping sentence chunks.</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">    chunk_size = 2 means each chunk contains 2 consecutive sentences.</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">    Overlap of 1 sentence ensures context is not lost at chunk boundaries.</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    all_chunks <span class="op">=</span> []</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> doc <span class="kw">in</span> docs:</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>        sentences <span class="op">=</span> re.split(<span class="vs">r"</span><span class="kw">(</span><span class="fu">?&lt;</span><span class="vs">=</span><span class="pp">[.!?]</span><span class="kw">)</span><span class="dv">\s</span><span class="op">+</span><span class="vs">"</span>, doc[<span class="st">"text"</span>].strip())</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="bu">len</span>(sentences), <span class="bu">max</span>(<span class="dv">1</span>, chunk_size <span class="op">-</span> <span class="dv">1</span>)):</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>            chunk_text <span class="op">=</span> <span class="st">" "</span>.join(sentences[i : i <span class="op">+</span> chunk_size])</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> chunk_text.strip():</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>            all_chunks.append({</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>                <span class="st">"id"</span>:     <span class="ss">f"</span><span class="sc">{</span>doc[<span class="st">'id'</span>]<span class="sc">}</span><span class="ss">_chunk_</span><span class="sc">{</span>i<span class="sc">:03d}</span><span class="ss">"</span>,</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>                <span class="st">"text"</span>:   chunk_text,</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>                <span class="st">"doc_id"</span>: doc[<span class="st">"id"</span>],</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>            })</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> all_chunks</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-11" class="cell" data-execution_count="10">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================class BM25Index:    """    Classic TF-IDF keyword search using the BM25 ranking function.    Finds exact keyword matches that semantic search often misses    (e.g., product names, acronyms, version numbers like 'GPT-4').    """    def __init__(self, chunks: list[dict]):        tokenised  = [c["text"].lower().split() for c in chunks]        self.bm25  = BM25Okapi(tokenised)        self.chunks = chunks    def search(self, query: str, top_k: int = 10) -&gt; list[tuple[float, dict]]:        scores = self.bm25.get_scores(query.lower().split())        ranked = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)        return [(score, self.chunks[idx]) for idx, score in ranked[:top_k]]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="71a610f2" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.396548Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.396548Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.401647Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.400636Z&quot;}}" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STAGE 2 — VECTOR INDEX (ChromaDB + SentenceTransformer bi-encoder)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-12" class="cell" data-execution_count="11">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# STAGE 4 — HYBRID SEARCH WITH RECIPROCAL RANK FUSION</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="6780149b" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.402647Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.402647Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.408969Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.408455Z&quot;}}" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_vector_index(chunks: <span class="bu">list</span>[<span class="bu">dict</span>]) <span class="op">-&gt;</span> chromadb.Collection:</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Embeds all chunks with all-MiniLM-L6-v2 and stores them in ChromaDB.</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co">    ChromaDB uses HNSW internally — the same index type as Pinecone/Weaviate.</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">📦 Building ChromaDB vector index..."</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    ef <span class="op">=</span> SentenceTransformerEmbeddingFunction(model_name<span class="op">=</span><span class="st">"all-MiniLM-L6-v2"</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    client     <span class="op">=</span> chromadb.Client()</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    collection <span class="op">=</span> client.get_or_create_collection(</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"rag_lab_knowledge_base"</span>, embedding_function<span class="op">=</span>ef</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    collection.add(</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>        ids       <span class="op">=</span> [c[<span class="st">"id"</span>]   <span class="cf">for</span> c <span class="kw">in</span> chunks],</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        documents <span class="op">=</span> [c[<span class="st">"text"</span>] <span class="cf">for</span> c <span class="kw">in</span> chunks],</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        metadatas <span class="op">=</span> [{<span class="st">"doc_id"</span>: c[<span class="st">"doc_id"</span>]} <span class="cf">for</span> c <span class="kw">in</span> chunks],</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"   ✅ </span><span class="sc">{</span><span class="bu">len</span>(chunks)<span class="sc">}</span><span class="ss"> chunks indexed (HNSW backend, all-MiniLM-L6-v2 embeddings)"</span>)</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> collection</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-13" class="cell" data-execution_count="12">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================def reciprocal_rank_fusion(    vector_hits: list[dict],    bm25_hits:   list[tuple[float, dict]],    k:           int = 60,    top_k:       int = 6,) -&gt; list[dict]:    """    RRF score = Σ 1/(k + rank_i) across both result lists.    k=60 is the empirically optimal constant — it prevents the top-rank    position from dominating and rewards documents that rank consistently    across both systems. No weights to tune: RRF is parameter-free.    """    rrf_scores: dict[str, float] = {}    id_to_chunk: dict[str, dict] = {}    for rank, hit in enumerate(vector_hits):        cid = hit["id"]        rrf_scores[cid] = rrf_scores.get(cid, 0.0) + 1.0 / (k + rank + 1)        id_to_chunk[cid] = {"id": cid, "text": hit["document"]}    for rank, (_, chunk) in enumerate(bm25_hits):        cid = chunk["id"]        rrf_scores[cid] = rrf_scores.get(cid, 0.0) + 1.0 / (k + rank + 1)        id_to_chunk[cid] = chunk    sorted_ids = sorted(rrf_scores, key=lambda x: rrf_scores[x], reverse=True)    return [id_to_chunk[cid] for cid in sorted_ids[:top_k]]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="a1aee930" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.410976Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.410976Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.413947Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.413947Z&quot;}}" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STAGE 3 — BM25 KEYWORD INDEX</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-14" class="cell" data-execution_count="13">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# STAGE 5 — CROSS-ENCODER RERANKING (Stage 2 precision gate)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="aabb76fb" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.415464Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.415464Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.421813Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.421813Z&quot;}}" data-execution_count="10">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> BM25Index:</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Classic TF-IDF keyword search using the BM25 ranking function.</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">    Finds exact keyword matches that semantic search often misses</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">    (e.g., product names, acronyms, version numbers like 'GPT-4').</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, chunks: <span class="bu">list</span>[<span class="bu">dict</span>]):</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        tokenised  <span class="op">=</span> [c[<span class="st">"text"</span>].lower().split() <span class="cf">for</span> c <span class="kw">in</span> chunks]</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bm25  <span class="op">=</span> BM25Okapi(tokenised)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.chunks <span class="op">=</span> chunks</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> search(<span class="va">self</span>, query: <span class="bu">str</span>, top_k: <span class="bu">int</span> <span class="op">=</span> <span class="dv">10</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">tuple</span>[<span class="bu">float</span>, <span class="bu">dict</span>]]:</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        scores <span class="op">=</span> <span class="va">self</span>.bm25.get_scores(query.lower().split())</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        ranked <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">enumerate</span>(scores), key<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="dv">1</span>], reverse<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> [(score, <span class="va">self</span>.chunks[idx]) <span class="cf">for</span> idx, score <span class="kw">in</span> ranked[:top_k]]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-15" class="cell" data-execution_count="14">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================def rerank(    query:       str,    candidates:  list[dict],    model_name:  str = "cross-encoder/ms-marco-MiniLM-L-6-v2",    top_k:       int = 3,) -&gt; list[dict]:    """    Cross-encoder jointly encodes the (query, document) pair.    This is much more accurate than cosine similarity between    independent embeddings, because it can model the interaction    between query tokens and document tokens directly.    Cost: O(n) inference calls vs O(1) for bi-encoder similarity.    Strategy: retrieve top-50 fast with bi-encoder, rerank top-50    with cross-encoder, return top-5 to the LLM.    """    print(f"  🎯 Cross-encoder reranking {len(candidates)} candidates...")    model  = CrossEncoder(model_name)    pairs  = [(query, c["text"]) for c in candidates]    scores = model.predict(pairs)    ranked = sorted(zip(scores, candidates), key=lambda x: x[0], reverse=True)    return [doc for _, doc in ranked[:top_k]]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="59570c12" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.423824Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.423824Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.426855Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.426855Z&quot;}}" data-execution_count="11">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STAGE 4 — HYBRID SEARCH WITH RECIPROCAL RANK FUSION</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-16" class="cell" data-execution_count="15">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# STAGE 6 — RAG PROMPT CONSTRUCTION</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="7959c75d" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.428249Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.428249Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.433335Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.433335Z&quot;}}" data-execution_count="12">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reciprocal_rank_fusion(</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    vector_hits: <span class="bu">list</span>[<span class="bu">dict</span>],</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    bm25_hits:   <span class="bu">list</span>[<span class="bu">tuple</span>[<span class="bu">float</span>, <span class="bu">dict</span>]],</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    k:           <span class="bu">int</span> <span class="op">=</span> <span class="dv">60</span>,</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    top_k:       <span class="bu">int</span> <span class="op">=</span> <span class="dv">6</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">dict</span>]:</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">    RRF score = Σ 1/(k + rank_i) across both result lists.</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="co">    k=60 is the empirically optimal constant — it prevents the top-rank</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="co">    position from dominating and rewards documents that rank consistently</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="co">    across both systems. No weights to tune: RRF is parameter-free.</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    rrf_scores: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">float</span>] <span class="op">=</span> {}</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    id_to_chunk: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">dict</span>] <span class="op">=</span> {}</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> rank, hit <span class="kw">in</span> <span class="bu">enumerate</span>(vector_hits):</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>        cid <span class="op">=</span> hit[<span class="st">"id"</span>]</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>        rrf_scores[cid] <span class="op">=</span> rrf_scores.get(cid, <span class="fl">0.0</span>) <span class="op">+</span> <span class="fl">1.0</span> <span class="op">/</span> (k <span class="op">+</span> rank <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>        id_to_chunk[cid] <span class="op">=</span> {<span class="st">"id"</span>: cid, <span class="st">"text"</span>: hit[<span class="st">"document"</span>]}</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> rank, (_, chunk) <span class="kw">in</span> <span class="bu">enumerate</span>(bm25_hits):</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>        cid <span class="op">=</span> chunk[<span class="st">"id"</span>]</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>        rrf_scores[cid] <span class="op">=</span> rrf_scores.get(cid, <span class="fl">0.0</span>) <span class="op">+</span> <span class="fl">1.0</span> <span class="op">/</span> (k <span class="op">+</span> rank <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>        id_to_chunk[cid] <span class="op">=</span> chunk</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    sorted_ids <span class="op">=</span> <span class="bu">sorted</span>(rrf_scores, key<span class="op">=</span><span class="kw">lambda</span> x: rrf_scores[x], reverse<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [id_to_chunk[cid] <span class="cf">for</span> cid <span class="kw">in</span> sorted_ids[:top_k]]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-17" class="cell" data-execution_count="16">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================def build_rag_prompt(query: str, context_docs: list[dict]) -&gt; str:    """    Constructs the prompt sent to the LLM.    In production: replace the print statement with an actual API call    (OpenAI, Anthropic, or any OpenRouter-compatible model).    """    context = "\n\n".join(        f"[Source {i+1}]: {d['text']}" for i, d in enumerate(context_docs)    )    return (        "You are a data engineering expert. Answer the question strictly based\n"        "on the provided context. Do not add information not in the context.\n\n"        f"CONTEXT:\n{context}\n\n"        f"QUESTION: {query}\n\n"        "ANSWER:"    )</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="6e82fa89" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.434858Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.434858Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.439465Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.439465Z&quot;}}" data-execution_count="13">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STAGE 5 — CROSS-ENCODER RERANKING (Stage 2 precision gate)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-18" class="cell" data-execution_count="17">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# STAGE 7 — EVALUATION (simplified RAGAS-style metrics)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="4fe84055" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.440982Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.440982Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.447071Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.446023Z&quot;}}" data-execution_count="14">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> rerank(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    query:       <span class="bu">str</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    candidates:  <span class="bu">list</span>[<span class="bu">dict</span>],</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    model_name:  <span class="bu">str</span> <span class="op">=</span> <span class="st">"cross-encoder/ms-marco-MiniLM-L-6-v2"</span>,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    top_k:       <span class="bu">int</span> <span class="op">=</span> <span class="dv">3</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">dict</span>]:</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="co">    Cross-encoder jointly encodes the (query, document) pair.</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co">    This is much more accurate than cosine similarity between</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="co">    independent embeddings, because it can model the interaction</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="co">    between query tokens and document tokens directly.</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="co">    Cost: O(n) inference calls vs O(1) for bi-encoder similarity.</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="co">    Strategy: retrieve top-50 fast with bi-encoder, rerank top-50</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="co">    with cross-encoder, return top-5 to the LLM.</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  🎯 Cross-encoder reranking </span><span class="sc">{</span><span class="bu">len</span>(candidates)<span class="sc">}</span><span class="ss"> candidates..."</span>)</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>    model  <span class="op">=</span> CrossEncoder(model_name)</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    pairs  <span class="op">=</span> [(query, c[<span class="st">"text"</span>]) <span class="cf">for</span> c <span class="kw">in</span> candidates]</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    scores <span class="op">=</span> model.predict(pairs)</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>    ranked <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">zip</span>(scores, candidates), key<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="dv">0</span>], reverse<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [doc <span class="cf">for</span> _, doc <span class="kw">in</span> ranked[:top_k]]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-19" class="cell" data-execution_count="18">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================def evaluate(    query:          str,    retrieved_docs: list[dict],    embed_model:    SentenceTransformer,    relevance_threshold: float = 0.30,) -&gt; dict:    """    Computes two simplified metrics using cosine similarity:    Context Precision = fraction of retrieved chunks above the                        relevance threshold (no noise in context).    Avg Similarity    = mean cosine score between query and chunks                        (proxy for Context Recall).    In production: use RAGAS which calls an LLM judge for all four metrics.    Alert if faithfulness &lt; 0.85 — it means the LLM is hallucinating.    """    q_emb   = embed_model.encode(query, normalize_embeddings=True)    scores  = [        float(np.dot(q_emb, embed_model.encode(d["text"], normalize_embeddings=True)))        for d in retrieved_docs    ]    relevant = sum(s &gt; relevance_threshold for s in scores)    return {        "context_precision": round(relevant / len(scores), 3),        "avg_similarity":    round(sum(scores) / len(scores), 3),        "chunks_in_context": len(retrieved_docs),    }</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="7b314ded" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.448083Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.448083Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.451747Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.451747Z&quot;}}" data-execution_count="15">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STAGE 6 — RAG PROMPT CONSTRUCTION</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-20" class="cell" data-execution_count="19">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================# MAIN — Full pipeline run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="c0dcd0b2" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.453263Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.453263Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.457889Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.457378Z&quot;}}" data-execution_count="16">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_rag_prompt(query: <span class="bu">str</span>, context_docs: <span class="bu">list</span>[<span class="bu">dict</span>]) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Constructs the prompt sent to the LLM.</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="co">    In production: replace the print statement with an actual API call</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co">    (OpenAI, Anthropic, or any OpenRouter-compatible model).</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    context <span class="op">=</span> <span class="st">"</span><span class="ch">\n\n</span><span class="st">"</span>.join(</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"[Source </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss">]: </span><span class="sc">{</span>d[<span class="st">'text'</span>]<span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> i, d <span class="kw">in</span> <span class="bu">enumerate</span>(context_docs)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"You are a data engineering expert. Answer the question strictly based</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"on the provided context. Do not add information not in the context.</span><span class="ch">\n\n</span><span class="st">"</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"CONTEXT:</span><span class="ch">\n</span><span class="sc">{</span>context<span class="sc">}</span><span class="ch">\n\n</span><span class="ss">"</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"QUESTION: </span><span class="sc">{</span>query<span class="sc">}</span><span class="ch">\n\n</span><span class="ss">"</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"ANSWER:"</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-21" class="cell" data-execution_count="20">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================def main():    print("=" * 65)    print("  Day 3 Lab — Vector Databases and Advanced RAG Engineering")    print("=" * 65)    # Stage 1: Chunk    chunks = chunk_documents(DOCUMENTS, chunk_size=2)    print(f"\n📄 {len(DOCUMENTS)} documents → {len(chunks)} chunks after splitting")    # Stage 2: Build indexes    collection  = build_vector_index(chunks)    bm25_index  = BM25Index(chunks)    embed_model = SentenceTransformer("all-MiniLM-L6-v2")    queries = [        "How does Kafka guarantee message ordering across partitions?",        "What is Reciprocal Rank Fusion and why is it better than weighted merging?",        "How does cross-encoder reranking improve over bi-encoder retrieval?",        "What metrics does RAGAS use to evaluate a RAG pipeline?",    ]    for query in queries:        print(f"\n{'=' * 65}")        print(f"QUERY: {query}")        print("=" * 65)        # Vector (semantic) search        vec_results = collection.query(query_texts=[query], n_results=6)        vec_hits = [            {"id": vid, "document": vdoc}            for vid, vdoc in zip(                vec_results["ids"][0],                vec_results["documents"][0],            )        ]        print(f"\n  🔍 Vector search:   {len(vec_hits)} candidates")        # BM25 keyword search        bm25_hits = bm25_index.search(query, top_k=6)        print(f"  🔑 BM25 search:     {len(bm25_hits)} candidates")        # Hybrid RRF fusion        hybrid = reciprocal_rank_fusion(vec_hits, bm25_hits, top_k=6)        print(f"  ⚡ RRF fusion:      {len(hybrid)} merged candidates")        # Cross-encoder rerank        final_docs = rerank(query, hybrid, top_k=3)        # Build prompt        prompt = build_rag_prompt(query, final_docs)        print("\n  📝 Top-3 chunks after reranking:")        for i, doc in enumerate(final_docs, 1):            print(f"    [{i}] {doc['text'][:110]}...")        print("\n  📋 Prompt sent to LLM (first 300 chars):")        print(f"    {prompt[:300]}...")        print("\n  [In production: call your LLM API here with the full prompt]")        # Evaluate        metrics = evaluate(query, final_docs, embed_model)        print(f"\n  📊 Retrieval metrics: {metrics}")        if metrics["context_precision"] &lt; 0.5:            print("  ⚠️  Low precision — consider increasing ef or lowering chunk overlap")        else:            print("  ✅  Retrieval quality looks good")    print("\n" + "=" * 65)    print("Lab complete. Key takeaways:")    print("  1. Vector search finds semantic matches — misses exact terms")    print("  2. BM25 finds exact keyword matches — misses paraphrases")    print("  3. RRF fuses both result lists without needing to tune weights")    print("  4. Cross-encoder adds a high-precision second stage (at O(n) cost)")    print("  5. Always measure: context precision, recall, faithfulness, relevance")    print("=" * 65)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="844b15e2" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.459399Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.459399Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.462427Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.462427Z&quot;}}" data-execution_count="17">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STAGE 7 — EVALUATION (simplified RAGAS-style metrics)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="0adc58db" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.463950Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.463950Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.469201Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.469201Z&quot;}}" data-execution_count="18">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> evaluate(</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    query:          <span class="bu">str</span>,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    retrieved_docs: <span class="bu">list</span>[<span class="bu">dict</span>],</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    embed_model:    SentenceTransformer,</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    relevance_threshold: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.30</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="co">    Computes two simplified metrics using cosine similarity:</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="co">    Context Precision = fraction of retrieved chunks above the</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="co">                        relevance threshold (no noise in context).</span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="co">    Avg Similarity    = mean cosine score between query and chunks</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="co">                        (proxy for Context Recall).</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a><span class="co">    In production: use RAGAS which calls an LLM judge for all four metrics.</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a><span class="co">    Alert if faithfulness &lt; 0.85 — it means the LLM is hallucinating.</span></span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>    q_emb   <span class="op">=</span> embed_model.encode(query, normalize_embeddings<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    scores  <span class="op">=</span> [</span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>        <span class="bu">float</span>(np.dot(q_emb, embed_model.encode(d[<span class="st">"text"</span>], normalize_embeddings<span class="op">=</span><span class="va">True</span>)))</span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> d <span class="kw">in</span> retrieved_docs</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a>    relevant <span class="op">=</span> <span class="bu">sum</span>(s <span class="op">&gt;</span> relevance_threshold <span class="cf">for</span> s <span class="kw">in</span> scores)</span>
+<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">"context_precision"</span>: <span class="bu">round</span>(relevant <span class="op">/</span> <span class="bu">len</span>(scores), <span class="dv">3</span>),</span>
+<span id="cb21-28"><a href="#cb21-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">"avg_similarity"</span>:    <span class="bu">round</span>(<span class="bu">sum</span>(scores) <span class="op">/</span> <span class="bu">len</span>(scores), <span class="dv">3</span>),</span>
+<span id="cb21-29"><a href="#cb21-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">"chunks_in_context"</span>: <span class="bu">len</span>(retrieved_docs),</span>
+<span id="cb21-30"><a href="#cb21-30" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="91dad1f4" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.470720Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.470720Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.474252Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.474252Z&quot;}}" data-execution_count="19">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co"># MAIN — Full pipeline run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="60e85f14" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.476735Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.475737Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.484884Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.484884Z&quot;}}" data-execution_count="20">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">65</span>)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  Day 3 Lab — Vector Databases and Advanced RAG Engineering"</span>)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">65</span>)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Stage 1: Chunk</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    chunks <span class="op">=</span> chunk_documents(DOCUMENTS, chunk_size<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">📄 </span><span class="sc">{</span><span class="bu">len</span>(DOCUMENTS)<span class="sc">}</span><span class="ss"> documents → </span><span class="sc">{</span><span class="bu">len</span>(chunks)<span class="sc">}</span><span class="ss"> chunks after splitting"</span>)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Stage 2: Build indexes</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    collection  <span class="op">=</span> build_vector_index(chunks)</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    bm25_index  <span class="op">=</span> BM25Index(chunks)</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    embed_model <span class="op">=</span> SentenceTransformer(<span class="st">"all-MiniLM-L6-v2"</span>)</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Stage 8: prove ChromaDB is actually a database, not just an index</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>    demo_persistence_and_filtering(chunks)</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>    queries <span class="op">=</span> [</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>        <span class="st">"How does Kafka guarantee message ordering across partitions?"</span>,</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>        <span class="st">"What is Reciprocal Rank Fusion and why is it better than weighted merging?"</span>,</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">"How does cross-encoder reranking improve over bi-encoder retrieval?"</span>,</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">"What metrics does RAGAS use to evaluate a RAG pipeline?"</span>,</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> query <span class="kw">in</span> queries:</span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="sc">{</span><span class="st">'='</span> <span class="op">*</span> <span class="dv">65</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"QUERY: </span><span class="sc">{</span>query<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">65</span>)</span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Vector (semantic) search</span></span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>        vec_results <span class="op">=</span> collection.query(query_texts<span class="op">=</span>[query], n_results<span class="op">=</span><span class="dv">6</span>)</span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>        vec_hits <span class="op">=</span> [</span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>            {<span class="st">"id"</span>: vid, <span class="st">"document"</span>: vdoc}</span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> vid, vdoc <span class="kw">in</span> <span class="bu">zip</span>(</span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a>                vec_results[<span class="st">"ids"</span>][<span class="dv">0</span>],</span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>                vec_results[<span class="st">"documents"</span>][<span class="dv">0</span>],</span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">  🔍 Vector search:   </span><span class="sc">{</span><span class="bu">len</span>(vec_hits)<span class="sc">}</span><span class="ss"> candidates"</span>)</span>
+<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a>        <span class="co"># BM25 keyword search</span></span>
+<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a>        bm25_hits <span class="op">=</span> bm25_index.search(query, top_k<span class="op">=</span><span class="dv">6</span>)</span>
+<span id="cb23-45"><a href="#cb23-45" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  🔑 BM25 search:     </span><span class="sc">{</span><span class="bu">len</span>(bm25_hits)<span class="sc">}</span><span class="ss"> candidates"</span>)</span>
+<span id="cb23-46"><a href="#cb23-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-47"><a href="#cb23-47" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Hybrid RRF fusion</span></span>
+<span id="cb23-48"><a href="#cb23-48" aria-hidden="true" tabindex="-1"></a>        hybrid <span class="op">=</span> reciprocal_rank_fusion(vec_hits, bm25_hits, top_k<span class="op">=</span><span class="dv">6</span>)</span>
+<span id="cb23-49"><a href="#cb23-49" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  ⚡ RRF fusion:      </span><span class="sc">{</span><span class="bu">len</span>(hybrid)<span class="sc">}</span><span class="ss"> merged candidates"</span>)</span>
+<span id="cb23-50"><a href="#cb23-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-51"><a href="#cb23-51" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Cross-encoder rerank</span></span>
+<span id="cb23-52"><a href="#cb23-52" aria-hidden="true" tabindex="-1"></a>        final_docs <span class="op">=</span> rerank(query, hybrid, top_k<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb23-53"><a href="#cb23-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-54"><a href="#cb23-54" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Build prompt</span></span>
+<span id="cb23-55"><a href="#cb23-55" aria-hidden="true" tabindex="-1"></a>        prompt <span class="op">=</span> build_rag_prompt(query, final_docs)</span>
+<span id="cb23-56"><a href="#cb23-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-57"><a href="#cb23-57" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">  📝 Top-3 chunks after reranking:"</span>)</span>
+<span id="cb23-58"><a href="#cb23-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i, doc <span class="kw">in</span> <span class="bu">enumerate</span>(final_docs, <span class="dv">1</span>):</span>
+<span id="cb23-59"><a href="#cb23-59" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"    [</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">] </span><span class="sc">{</span>doc[<span class="st">'text'</span>][:<span class="dv">110</span>]<span class="sc">}</span><span class="ss">..."</span>)</span>
+<span id="cb23-60"><a href="#cb23-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-61"><a href="#cb23-61" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">  📋 Prompt sent to LLM (first 300 chars):"</span>)</span>
+<span id="cb23-62"><a href="#cb23-62" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"    </span><span class="sc">{</span>prompt[:<span class="dv">300</span>]<span class="sc">}</span><span class="ss">..."</span>)</span>
+<span id="cb23-63"><a href="#cb23-63" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">  [In production: call your LLM API here with the full prompt]"</span>)</span>
+<span id="cb23-64"><a href="#cb23-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-65"><a href="#cb23-65" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Evaluate</span></span>
+<span id="cb23-66"><a href="#cb23-66" aria-hidden="true" tabindex="-1"></a>        metrics <span class="op">=</span> evaluate(query, final_docs, embed_model)</span>
+<span id="cb23-67"><a href="#cb23-67" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">  📊 Retrieval metrics: </span><span class="sc">{</span>metrics<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb23-68"><a href="#cb23-68" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> metrics[<span class="st">"context_precision"</span>] <span class="op">&lt;</span> <span class="fl">0.5</span>:</span>
+<span id="cb23-69"><a href="#cb23-69" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="st">"  ⚠️  Low precision — consider increasing ef or lowering chunk overlap"</span>)</span>
+<span id="cb23-70"><a href="#cb23-70" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb23-71"><a href="#cb23-71" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="st">"  ✅  Retrieval quality looks good"</span>)</span>
+<span id="cb23-72"><a href="#cb23-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-73"><a href="#cb23-73" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span> <span class="op">*</span> <span class="dv">65</span>)</span>
+<span id="cb23-74"><a href="#cb23-74" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Lab complete. Key takeaways:"</span>)</span>
+<span id="cb23-75"><a href="#cb23-75" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  1. Vector search finds semantic matches — misses exact terms"</span>)</span>
+<span id="cb23-76"><a href="#cb23-76" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  2. BM25 finds exact keyword matches — misses paraphrases"</span>)</span>
+<span id="cb23-77"><a href="#cb23-77" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  3. RRF fuses both result lists without needing to tune weights"</span>)</span>
+<span id="cb23-78"><a href="#cb23-78" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  4. Cross-encoder adds a high-precision second stage (at O(n) cost)"</span>)</span>
+<span id="cb23-79"><a href="#cb23-79" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  5. Always measure: context precision, recall, faithfulness, relevance"</span>)</span>
+<span id="cb23-80"><a href="#cb23-80" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">65</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="6dc47117" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.486405Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.486405Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.490434Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.489923Z&quot;}}" data-execution_count="21">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STAGE 8 — PERSISTENCE &amp; METADATA FILTERING (the DATABASE half of “vector database”)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="3844805e" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.492035Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.492035Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:10.499649Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:10.499649Z&quot;}}" data-execution_count="22">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> demo_persistence_and_filtering(chunks: <span class="bu">list</span>[<span class="bu">dict</span>]) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Stage 2 used chromadb.Client() - in-memory, gone the moment the process</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co">    exits. A real vector DATABASE has to survive a restart, and it has to</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="co">    support narrowing a search by metadata, not similarity alone. Neither</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="co">    is shown anywhere above, so this stage shows both, for real:</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="co">    1. Write to a PersistentClient, drop the handle (simulating the process</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="co">       exiting), reopen a fresh client pointed at the same path, and confirm</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="co">       the chunks are still there with no re-embedding.</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="co">    2. Run the same query with and without a `where={"doc_id": ...}` filter,</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="co">       and show the candidate set actually narrows to just that document.</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> shutil</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>    <span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a>    persist_dir <span class="op">=</span> Path(<span class="st">"chroma_persist_demo"</span>)</span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a>    shutil.rmtree(persist_dir, ignore_errors<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a>    ef <span class="op">=</span> SentenceTransformerEmbeddingFunction(model_name<span class="op">=</span><span class="st">"all-MiniLM-L6-v2"</span>)</span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n\U0001F4be</span><span class="st"> Writing to a PersistentClient (not the in-memory Client from Stage 2)..."</span>)</span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a>    client1 <span class="op">=</span> chromadb.PersistentClient(path<span class="op">=</span><span class="bu">str</span>(persist_dir))</span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a>    coll1 <span class="op">=</span> client1.get_or_create_collection(<span class="st">"persist_demo"</span>, embedding_function<span class="op">=</span>ef)</span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a>    coll1.add(</span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a>        ids       <span class="op">=</span> [c[<span class="st">"id"</span>]   <span class="cf">for</span> c <span class="kw">in</span> chunks],</span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a>        documents <span class="op">=</span> [c[<span class="st">"text"</span>] <span class="cf">for</span> c <span class="kw">in</span> chunks],</span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a>        metadatas <span class="op">=</span> [{<span class="st">"doc_id"</span>: c[<span class="st">"doc_id"</span>]} <span class="cf">for</span> c <span class="kw">in</span> chunks],</span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"   wrote </span><span class="sc">{</span>coll1<span class="sc">.</span>count()<span class="sc">}</span><span class="ss"> chunks to disk at </span><span class="sc">{</span>persist_dir<span class="sc">}</span><span class="ss">/"</span>)</span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">del</span> client1, coll1   <span class="co"># the closest a notebook gets to "the process exited"</span></span>
+<span id="cb25-33"><a href="#cb25-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-34"><a href="#cb25-34" aria-hidden="true" tabindex="-1"></a>    client2 <span class="op">=</span> chromadb.PersistentClient(path<span class="op">=</span><span class="bu">str</span>(persist_dir))</span>
+<span id="cb25-35"><a href="#cb25-35" aria-hidden="true" tabindex="-1"></a>    coll2 <span class="op">=</span> client2.get_or_create_collection(<span class="st">"persist_demo"</span>, embedding_function<span class="op">=</span>ef)</span>
+<span id="cb25-36"><a href="#cb25-36" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"   reopened from disk, zero re-embedding calls: </span><span class="sc">{</span>coll2<span class="sc">.</span>count()<span class="sc">}</span><span class="ss"> chunks still there"</span>)</span>
+<span id="cb25-37"><a href="#cb25-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-38"><a href="#cb25-38" aria-hidden="true" tabindex="-1"></a>    query <span class="op">=</span> <span class="st">"How does indexing work?"</span></span>
+<span id="cb25-39"><a href="#cb25-39" aria-hidden="true" tabindex="-1"></a>    unfiltered <span class="op">=</span> coll2.query(query_texts<span class="op">=</span>[query], n_results<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb25-40"><a href="#cb25-40" aria-hidden="true" tabindex="-1"></a>    filtered <span class="op">=</span> coll2.query(query_texts<span class="op">=</span>[query], n_results<span class="op">=</span><span class="dv">8</span>, where<span class="op">=</span>{<span class="st">"doc_id"</span>: <span class="st">"doc_004"</span>})</span>
+<span id="cb25-41"><a href="#cb25-41" aria-hidden="true" tabindex="-1"></a>    unf_docs <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">set</span>(m[<span class="st">"doc_id"</span>] <span class="cf">for</span> m <span class="kw">in</span> unfiltered[<span class="st">"metadatas"</span>][<span class="dv">0</span>]))</span>
+<span id="cb25-42"><a href="#cb25-42" aria-hidden="true" tabindex="-1"></a>    filt_docs <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">set</span>(m[<span class="st">"doc_id"</span>] <span class="cf">for</span> m <span class="kw">in</span> filtered[<span class="st">"metadatas"</span>][<span class="dv">0</span>]))</span>
+<span id="cb25-43"><a href="#cb25-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-44"><a href="#cb25-44" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">   unfiltered query </span><span class="ch">\u2192</span><span class="ss"> </span><span class="sc">{</span><span class="bu">len</span>(unfiltered[<span class="st">'ids'</span>][<span class="dv">0</span>])<span class="sc">}</span><span class="ss"> candidates, from doc_ids </span><span class="sc">{</span>unf_docs<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb25-45"><a href="#cb25-45" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"   where=doc_004 only </span><span class="ch">\u2192</span><span class="ss"> </span><span class="sc">{</span><span class="bu">len</span>(filtered[<span class="st">'ids'</span>][<span class="dv">0</span>])<span class="sc">}</span><span class="ss"> candidates, from doc_ids </span><span class="sc">{</span>filt_docs<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb25-46"><a href="#cb25-46" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"   same similarity ranking underneath - metadata filtering narrows the"</span>)</span>
+<span id="cb25-47"><a href="#cb25-47" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"   candidate pool BEFORE ranking, which is what a real multi-tenant or"</span>)</span>
+<span id="cb25-48"><a href="#cb25-48" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"   access-controlled RAG system needs (e.g. where={</span><span class="ch">\"</span><span class="st">customer_id</span><span class="ch">\"</span><span class="st">: ...})."</span>)</span>
+<span id="cb25-49"><a href="#cb25-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-50"><a href="#cb25-50" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Release both PersistentClient handles before deleting the directory -</span></span>
+<span id="cb25-51"><a href="#cb25-51" aria-hidden="true" tabindex="-1"></a>    <span class="co"># SQLite (what Chroma persists to) holds the file open until every</span></span>
+<span id="cb25-52"><a href="#cb25-52" aria-hidden="true" tabindex="-1"></a>    <span class="co"># reference is gone, and Windows (unlike POSIX) refuses to remove a file</span></span>
+<span id="cb25-53"><a href="#cb25-53" aria-hidden="true" tabindex="-1"></a>    <span class="co"># that's still locked. Skipping this leaves chroma_persist_demo/ on disk</span></span>
+<span id="cb25-54"><a href="#cb25-54" aria-hidden="true" tabindex="-1"></a>    <span class="co"># every single run - found by actually running this cell, not by reading it.</span></span>
+<span id="cb25-55"><a href="#cb25-55" aria-hidden="true" tabindex="-1"></a>    <span class="kw">del</span> client2, coll2</span>
+<span id="cb25-56"><a href="#cb25-56" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> gc</span>
+<span id="cb25-57"><a href="#cb25-57" aria-hidden="true" tabindex="-1"></a>    gc.collect()</span>
+<span id="cb25-58"><a href="#cb25-58" aria-hidden="true" tabindex="-1"></a>    shutil.rmtree(persist_dir, ignore_errors<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="run" class="level2">
 <h2 class="anchored" data-anchor-id="run">▶ Run</h2>
-<div id="cell-23" class="cell" data-execution_count="21">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>main()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="84321e81" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-08T06:29:10.502393Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-09-08T06:29:10.501261Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-09-08T06:29:50.701511Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-08T06:29:50.701511Z&quot;}}" data-execution_count="23">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>main()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>=================================================================
-  Day 3 Lab - Vector Databases and Advanced RAG Engineering
+  Day 3 Lab — Vector Databases and Advanced RAG Engineering
 =================================================================
 
-8 documents -&gt; 32 chunks after splitting
+📄 8 documents → 32 chunks after splitting
 
-Building ChromaDB vector index...
-   32 chunks indexed (HNSW backend, all-MiniLM-L6-v2 embeddings)
+📦 Building ChromaDB vector index...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/103 [00:00&lt;?, ?it/s]
+Loading weights: 100%|██████████| 103/103 [00:00&lt;00:00, 4379.30it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   ✅ 32 chunks indexed (HNSW backend, all-MiniLM-L6-v2 embeddings)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Loading weights:   0%|          | 0/103 [00:00&lt;?, ?it/s]
+Loading weights: 100%|██████████| 103/103 [00:00&lt;00:00, 4757.28it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+💾 Writing to a PersistentClient (not the in-memory Client from Stage 2)...
+   wrote 32 chunks to disk at chroma_persist_demo/
+   reopened from disk, zero re-embedding calls: 32 chunks still there
+
+   unfiltered query → 8 candidates, from doc_ids ['doc_001', 'doc_004', 'doc_005', 'doc_006']
+   where=doc_004 only → 4 candidates, from doc_ids ['doc_004']
+   same similarity ranking underneath - metadata filtering narrows the
+   candidate pool BEFORE ranking, which is what a real multi-tenant or
+   access-controlled RAG system needs (e.g. where={"customer_id": ...}).
 
 =================================================================
 QUERY: How does Kafka guarantee message ordering across partitions?
 =================================================================
 
-  Vector search:   6 candidates
-  BM25 search:     6 candidates
-  RRF fusion:      6 merged candidates
-  Cross-encoder reranking 6 candidates...
-
-  Top-3 chunks after reranking:
+  🔍 Vector search:   6 candidates
+  🔑 BM25 search:     6 candidates
+  ⚡ RRF fusion:      6 merged candidates
+  🎯 Cross-encoder reranking 6 candidates...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Loading weights:   0%|          | 0/105 [00:00&lt;?, ?it/s]
+Loading weights: 100%|██████████| 105/105 [00:00&lt;00:00, 4981.92it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  📝 Top-3 chunks after reranking:
     [1] Apache Kafka is a distributed event streaming platform. It uses partitions and offsets to guarantee message or...
     [2] It uses partitions and offsets to guarantee message ordering within a partition. Consumer groups allow multipl...
-    [3] Consumer groups allow multiple consumers to read the same topic in parallel - each partition goes to exactly o...
+    [3] Consumer groups allow multiple consumers to read the same topic in parallel — each partition goes to exactly o...
 
-  Prompt sent to LLM (first 300 chars):
+  📋 Prompt sent to LLM (first 300 chars):
     You are a data engineering expert. Answer the question strictly based
 on the provided context. Do not add information not in the context.
 
@@ -671,50 +1208,64 @@ CONTEXT:
 
   [In production: call your LLM API here with the full prompt]
 
-  Retrieval metrics: {'context_precision': 1.0, 'avg_similarity': 0.557, 'chunks_in_context': 3}
-  Retrieval quality looks good
+  📊 Retrieval metrics: {'context_precision': 1.0, 'avg_similarity': 0.556, 'chunks_in_context': 3}
+  ✅  Retrieval quality looks good
 
 =================================================================
 QUERY: What is Reciprocal Rank Fusion and why is it better than weighted merging?
 =================================================================
 
-  Vector search:   6 candidates
-  BM25 search:     6 candidates
-  RRF fusion:      6 merged candidates
-  Cross-encoder reranking 6 candidates...
-
-  Top-3 chunks after reranking:
-    [1] Reciprocal Rank Fusion (RRF) merges both result lists: score = sum 1/(k + rank_i), where k=60 is the standard ...
+  🔍 Vector search:   6 candidates
+  🔑 BM25 search:     6 candidates
+  ⚡ RRF fusion:      6 merged candidates
+  🎯 Cross-encoder reranking 6 candidates...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Loading weights:   0%|          | 0/105 [00:00&lt;?, ?it/s]
+Loading weights: 100%|██████████| 105/105 [00:00&lt;00:00, 5086.53it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  📝 Top-3 chunks after reranking:
+    [1] Reciprocal Rank Fusion (RRF) merges both result lists: score = Σ 1/(k + rank_i), where k=60 is the standard co...
     [2] Hybrid search combines vector semantic search with BM25 keyword search. Reciprocal Rank Fusion (RRF) merges bo...
     [3] RRF is parameter-free and consistently outperforms a weighted linear combination. Most vector databases expose...
 
-  Prompt sent to LLM (first 300 chars):
+  📋 Prompt sent to LLM (first 300 chars):
     You are a data engineering expert. Answer the question strictly based
 on the provided context. Do not add information not in the context.
 
 CONTEXT:
-[Source 1]: Reciprocal Rank Fusion (RRF) merges both result lists: score = sum 1/(k + rank_i), where k=60 is the standard constant. RRF is parameter-fre...
+[Source 1]: Reciprocal Rank Fusion (RRF) merges both result lists: score = Σ 1/(k + rank_i), where k=60 is the standard constant. RRF is parameter-free ...
 
   [In production: call your LLM API here with the full prompt]
 
-  Retrieval metrics: {'context_precision': 0.667, 'avg_similarity': 0.474, 'chunks_in_context': 3}
-  Retrieval quality looks good
+  📊 Retrieval metrics: {'context_precision': 0.667, 'avg_similarity': 0.47, 'chunks_in_context': 3}
+  ✅  Retrieval quality looks good
 
 =================================================================
 QUERY: How does cross-encoder reranking improve over bi-encoder retrieval?
 =================================================================
 
-  Vector search:   6 candidates
-  BM25 search:     6 candidates
-  RRF fusion:      6 merged candidates
-  Cross-encoder reranking 6 candidates...
-
-  Top-3 chunks after reranking:
+  🔍 Vector search:   6 candidates
+  🔑 BM25 search:     6 candidates
+  ⚡ RRF fusion:      6 merged candidates
+  🎯 Cross-encoder reranking 6 candidates...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Loading weights:   0%|          | 0/105 [00:00&lt;?, ?it/s]
+Loading weights: 100%|██████████| 105/105 [00:00&lt;00:00, 4905.56it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  📝 Top-3 chunks after reranking:
     [1] Cross-encoder reranking is a two-stage retrieval pattern. Stage 1: the bi-encoder retrieves the top-50 candida...
-    [2] Stage 2: the cross-encoder scores each (query, document) pair jointly - far more accurate because it sees the ...
+    [2] Stage 2: the cross-encoder scores each (query, document) pair jointly — far more accurate because it sees the ...
     [3] Stage 1: the bi-encoder retrieves the top-50 candidates quickly using independent query and document embedding...
 
-  Prompt sent to LLM (first 300 chars):
+  📋 Prompt sent to LLM (first 300 chars):
     You are a data engineering expert. Answer the question strictly based
 on the provided context. Do not add information not in the context.
 
@@ -723,24 +1274,31 @@ CONTEXT:
 
   [In production: call your LLM API here with the full prompt]
 
-  Retrieval metrics: {'context_precision': 1.0, 'avg_similarity': 0.745, 'chunks_in_context': 3}
-  Retrieval quality looks good
+  📊 Retrieval metrics: {'context_precision': 1.0, 'avg_similarity': 0.747, 'chunks_in_context': 3}
+  ✅  Retrieval quality looks good
 
 =================================================================
 QUERY: What metrics does RAGAS use to evaluate a RAG pipeline?
 =================================================================
 
-  Vector search:   6 candidates
-  BM25 search:     6 candidates
-  RRF fusion:      6 merged candidates
-  Cross-encoder reranking 6 candidates...
-
-  Top-3 chunks after reranking:
+  🔍 Vector search:   6 candidates
+  🔑 BM25 search:     6 candidates
+  ⚡ RRF fusion:      6 merged candidates
+  🎯 Cross-encoder reranking 6 candidates...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Loading weights:   0%|          | 0/105 [00:00&lt;?, ?it/s]
+Loading weights: 100%|██████████| 105/105 [00:00&lt;00:00, 5363.82it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  📝 Top-3 chunks after reranking:
     [1] RAG evaluation requires four metrics. Context Precision: are the retrieved chunks actually relevant?...
     [2] RAGAS is the standard open-source framework that computes all four automatically....
     [3] Answer Relevance: does the answer address the user question? RAGAS is the standard open-source framework that ...
 
-  Prompt sent to LLM (first 300 chars):
+  📋 Prompt sent to LLM (first 300 chars):
     You are a data engineering expert. Answer the question strictly based
 on the provided context. Do not add information not in the context.
 
@@ -751,13 +1309,13 @@ CONTEXT:
 
   [In production: call your LLM API here with the full prompt]
 
-  Retrieval metrics: {'context_precision': 1.0, 'avg_similarity': 0.535, 'chunks_in_context': 3}
-  Retrieval quality looks good
+  📊 Retrieval metrics: {'context_precision': 1.0, 'avg_similarity': 0.535, 'chunks_in_context': 3}
+  ✅  Retrieval quality looks good
 
 =================================================================
 Lab complete. Key takeaways:
-  1. Vector search finds semantic matches - misses exact terms
-  2. BM25 finds exact keyword matches - misses paraphrases
+  1. Vector search finds semantic matches — misses exact terms
+  2. BM25 finds exact keyword matches — misses paraphrases
   3. RRF fuses both result lists without needing to tune weights
   4. Cross-encoder adds a high-precision second stage (at O(n) cost)
   5. Always measure: context precision, recall, faithfulness, relevance
