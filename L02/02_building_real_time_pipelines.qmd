@@ -202,4 +202,23 @@ without a broker running, you'll see a connection failure instead — the
 schema-gate code catches that case and prints clear setup instructions
 rather than a raw stack trace, but that's not what the saved output here
 shows.
+
+The exact starting offsets (`0`, `1`, `2`) are only true of that one fresh
+run, though — a fresh broker, a fresh topic, and a consumer group
+(`day2-schema-check`) that has never committed an offset before. Kafka
+persists both the topic's message log and the consumer group's committed
+offset on the broker itself, so re-running this exact cell against the
+*same still-running* broker climbs instead of resetting: `3, 4, 5` the
+second time, `6, 7, 8` the third, and so on. That's expected Kafka
+behavior, not a bug in the lab. The `Summary: 2 accepted, 1 rejected by
+the schema gate.` line does stay stable across reruns, but only because
+`produce_sample_messages()` always writes one fresh 3-message batch
+immediately before each `consume_and_validate()` call — an accident of
+this script's structure, not proof that the offsets are equally stable.
+When reproducing this locally, check the *pattern* — three consecutive
+offsets where the first two are accepted and the third is rejected — not
+the specific starting number. To get the exact `0, 1, 2` back, restart the
+Kafka broker (stop the process, or `docker rm` the container and start a
+fresh one per this notebook's own setup instructions) before re-running
+the cell.
 :::
