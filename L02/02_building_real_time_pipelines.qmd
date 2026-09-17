@@ -192,11 +192,14 @@ for Part 1 was captured from a real executed run on Colab.
 Part 2 needs a real, running Kafka broker on `localhost:9092` — the notebook
 includes the commands to start a local single-broker Kafka directly in Colab
 (KRaft mode, no Zookeeper needed). The output saved in this notebook was
-captured from a real run in an environment with `kafka-python` and `pydantic`
-installed but **no broker listening** — which is exactly what you'll see if
-you run this cell without first starting Kafka: the schema-gate code catches
-the failure and prints clear setup instructions instead of a raw stack trace,
-rather than crashing. To see the full accept/reject round trip (two valid
-readings accepted, one malformed reading rejected by `SensorReading`'s
-validator), start the broker first, per the notebook's own instructions.
+captured from a real run against a live broker, and it **is** the full
+accept/reject round trip: the producer sends two valid readings and one
+deliberately malformed one (`temperature` as the string `"not_a_number"`),
+and the consumer accepts the two valid readings, rejects the malformed one
+on `SensorReading`'s validator, and ends with
+`Summary: 2 accepted, 1 rejected by the schema gate.` If you run this cell
+without a broker running, you'll see a connection failure instead — the
+schema-gate code catches that case and prints clear setup instructions
+rather than a raw stack trace, but that's not what the saved output here
+shows.
 :::
