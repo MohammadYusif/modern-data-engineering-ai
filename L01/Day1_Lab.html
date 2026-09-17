@@ -582,13 +582,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>ETL vs ELT, and Warehouse vs Lake vs Lakehouse</strong> — a runnable comparison of the three ingestion/storage patterns named in the course objectives.</li>
 <li><strong>Mini-Lakehouse with Delta Lake</strong> — a hands-on PySpark + Delta Lake demo proving ACID transactions, schema enforcement, time travel, <code>OPTIMIZE</code>/Z-ORDER, and schema evolution.</li>
 </ol>
-<div id="cell-2" class="cell">
+<div id="cell-2" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install pyspark<span class="op">==</span><span class="fl">3.5.0</span> delta<span class="op">-</span>spark<span class="op">==</span><span class="fl">3.2.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="part-1-etl-vs-elt-and-warehouse-vs-lake-vs-lakehouse" class="level2">
 <h2 class="anchored" data-anchor-id="part-1-etl-vs-elt-and-warehouse-vs-lake-vs-lakehouse">Part 1 — ETL vs ELT, and Warehouse vs Lake vs Lakehouse</h2>
 <p>Loads the same raw e-commerce order batch three different ways so the contrast between the three patterns is visible in the output, not just described in words: ETL (clean-before-load, warehouse style), ELT (load-before-clean, lake style), and the Lakehouse pattern (raw Bronze landing + governed Silver transform) that Part 2 then builds on with Delta Lake.</p>
-<div id="cell-4" class="cell">
+<div id="cell-4" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> shutil</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -744,7 +744,7 @@ Lakehouse   4 raw / 2 governed   both: raw at load, governed after</code></pre>
 <section id="part-2-mini-lakehouse-with-delta-lake" class="level2">
 <h2 class="anchored" data-anchor-id="part-2-mini-lakehouse-with-delta-lake">Part 2 — Mini-Lakehouse with Delta Lake</h2>
 <p>Everything below is the annotated walkthrough of a local Delta Lake mini-lakehouse: ACID transactions, schema enforcement, time travel, <code>OPTIMIZE</code>/Z-ORDER, and schema evolution.</p>
-<div id="cell-7" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="1eff6c2b-0e59-4b28-9ed2-462e9a1ba94a" data-execution_count="2">
+<div id="cell-7" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="1eff6c2b-0e59-4b28-9ed2-462e9a1ba94a" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install delta<span class="op">-</span>spark</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <div class="ansi-escaped-output">

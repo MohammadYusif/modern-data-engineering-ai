@@ -578,7 +578,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>Mock Kafka streaming pipeline</strong> — producers, a stateful window processor (tumbling/sliding/watermark), and a Delta Lake ACID sink.</li>
 <li><strong>Real Kafka round trip</strong> — one real <code>kafka-python</code> producer/consumer exchange with a Pydantic schema gate, run against a real local broker.</li>
 </ol>
-<div id="KvVRLRTZ9g0b" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="4becc092-d824-4c7d-cbc3-a7e0441e499c">
+<div id="KvVRLRTZ9g0b" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="4becc092-d824-4c7d-cbc3-a7e0441e499c" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install pyspark<span class="op">==</span><span class="fl">3.5.0</span> delta<span class="op">-</span>spark<span class="op">==</span><span class="fl">3.2.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Requirement already satisfied: pyspark==4.0.1 in /usr/local/lib/python3.12/dist-packages (4.0.1)
@@ -590,7 +590,7 @@ Requirement already satisfied: zipp&gt;=3.20 in /usr/local/lib/python3.12/dist-p
 </div>
 <section id="part-1-mock-kafka-streaming-pipeline-windowing-delta-sink" class="level2">
 <h2 class="anchored" data-anchor-id="part-1-mock-kafka-streaming-pipeline-windowing-delta-sink">Part 1 — Mock Kafka Streaming Pipeline (windowing + Delta sink)</h2>
-<div id="qJwyI47L9g0d" class="cell">
+<div id="qJwyI47L9g0d" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> random</span>
@@ -603,11 +603,11 @@ Requirement already satisfied: zipp&gt;=3.20 in /usr/local/lib/python3.12/dist-p
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> delta <span class="im">import</span> configure_spark_with_delta_pip</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="4O8mAj2Z9g0f" class="cell">
+<div id="4O8mAj2Z9g0f" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. BACKBONE — Mock Kafka Broker (partitions + offsets)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="CeInItTO9g0g" class="cell">
+<div id="CeInItTO9g0g" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MockKafkaBroker:</span>
@@ -656,11 +656,11 @@ Requirement already satisfied: zipp&gt;=3.20 in /usr/local/lib/python3.12/dist-p
 <span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>    spark.sparkContext.setLogLevel(<span class="st">"ERROR"</span>)</span>
 <span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> spark</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cF8cCPEl9g0j" class="cell">
+<div id="cF8cCPEl9g0j" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. INGESTION LAYER — Three concurrent IoT producers</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="-xku8O8h9g0j" class="cell">
+<div id="-xku8O8h9g0j" class="cell" data-execution_count="6">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> machine_producer(broker: MockKafkaBroker, machine_id: <span class="bu">str</span>):</span>
@@ -679,11 +679,11 @@ Requirement already satisfied: zipp&gt;=3.20 in /usr/local/lib/python3.12/dist-p
 <span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        })</span>
 <span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">await</span> asyncio.sleep(<span class="fl">0.3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="X4RND0JN9g0l" class="cell">
+<div id="X4RND0JN9g0l" class="cell" data-execution_count="7">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. COMPUTE LAYER — Stream processor with window types + watermark</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="2ofjvMY09g0m" class="cell">
+<div id="2ofjvMY09g0m" class="cell" data-execution_count="8">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> StreamProcessor:</span>
@@ -756,11 +756,11 @@ Requirement already satisfied: zipp&gt;=3.20 in /usr/local/lib/python3.12/dist-p
 <span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"status"</span>:       <span class="st">"CRITICAL"</span>,</span>
 <span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>                })</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="4CLc7OKq9g0n" class="cell">
+<div id="4CLc7OKq9g0n" class="cell" data-execution_count="9">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. STORAGE SINK — ACID append to Delta Lake</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="fbnF-0-h9g0o" class="cell">
+<div id="fbnF-0-h9g0o" class="cell" data-execution_count="10">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> delta_sink(</span>
@@ -801,11 +801,11 @@ Requirement already satisfied: zipp&gt;=3.20 in /usr/local/lib/python3.12/dist-p
 <span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>              <span class="ss">f"</span><span class="sc">{</span>p[<span class="st">'value'</span>]<span class="sc">}</span><span class="ss">°C | rolling avg </span><span class="sc">{</span>p[<span class="st">'rolling_avg'</span>]<span class="sc">}</span><span class="ss">°C | "</span></span>
 <span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>              <span class="ss">f"bucket </span><span class="sc">{</span>p[<span class="st">'bucket'</span>]<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>p[<span class="st">'bucket_count'</span>]<span class="sc">}</span><span class="ss"> events)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="3OG0TerX9g0o" class="cell">
+<div id="3OG0TerX9g0o" class="cell" data-execution_count="11">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. PIPELINE ORCHESTRATION</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="XnFEqWp49g0o" class="cell">
+<div id="XnFEqWp49g0o" class="cell" data-execution_count="12">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># =====================================================================</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> main():</span>
@@ -850,7 +850,7 @@ Requirement already satisfied: zipp&gt;=3.20 in /usr/local/lib/python3.12/dist-p
 </section>
 <section id="run" class="level2">
 <h2 class="anchored" data-anchor-id="run">▶ Run</h2>
-<div id="g2vXqVPA9g0r" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="f44c97ac-76c1-48ec-898c-d67a308e5a9c">
+<div id="g2vXqVPA9g0r" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="f44c97ac-76c1-48ec-898c-d67a308e5a9c" data-execution_count="13">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> main()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -887,7 +887,7 @@ Requirement already satisfied: zipp&gt;=3.20 in /usr/local/lib/python3.12/dist-p
 !cd kafka_2.13-3.7.0 &amp;&amp; bin/kafka-storage.sh format -t $(bin/kafka-storage.sh random-uuid) -c config/kraft/server.properties
 !cd kafka_2.13-3.7.0 &amp;&amp; nohup bin/kafka-server-start.sh config/kraft/server.properties &gt; /tmp/kafka.log 2&gt;&amp;1 &amp;</code></pre>
 <p>Give it ~15-20 seconds to finish starting before running the cells below.</p>
-<div id="cell-18" class="cell" data-execution_count="1">
+<div id="cell-18" class="cell" data-execution_count="14">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install kafka<span class="op">-</span>python pydantic</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Requirement already satisfied: kafka-python in c:\users\fdasg\appdata\local\programs\python\python312\lib\site-packages (3.0.9)
@@ -901,7 +901,7 @@ Requirement already satisfied: typing-inspection&gt;=0.4.2 in c:\users\fdasg\app
 [notice] To update, run: python.exe -m pip install --upgrade pip</code></pre>
 </div>
 </div>
-<div id="cell-19" class="cell" data-execution_count="2">
+<div id="cell-19" class="cell" data-execution_count="15">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -992,7 +992,7 @@ Requirement already satisfied: typing-inspection&gt;=0.4.2 in c:\users\fdasg\app
 <span id="cb19-88"><a href="#cb19-88" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"then re-run this cell. Part 1 above (the mock-broker pipeline)"</span>)</span>
 <span id="cb19-89"><a href="#cb19-89" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"still works without Kafka running."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-20" class="cell" data-execution_count="4">
+<div id="cell-20" class="cell" data-execution_count="16">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>main()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Real Kafka round trip (topic: factory_sensors_raw)

@@ -1027,7 +1027,7 @@ Unique countries: 38
 <pre><code>✅ RetailTransactionContract defined.</code></pre>
 </div>
 </div>
-<div id="LAfUCwEFSIus" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="b9462305-6f68-4b3a-c74a-56542331ec0c" data-execution_count="9">
+<div id="LAfUCwEFSIus" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="b9462305-6f68-4b3a-c74a-56542331ec0c" data-execution_count="8">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Apply contract validation ──────────────────────────────────────────────</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> loguru <span class="im">import</span> logger</span>
@@ -1093,7 +1093,7 @@ rejection_reason
 <section id="step-6-dama-6-dimension-quality-engine" class="level2">
 <h2 class="anchored" data-anchor-id="step-6-dama-6-dimension-quality-engine">Step 6 — DAMA 6-Dimension Quality Engine</h2>
 <p>We run all six DAMA quality dimensions on the <strong>contract-validated</strong> subset. These are not planted anomalies — they are real patterns in the data.</p>
-<div id="vpFKwqDpSIus" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="23d65bd2-347f-4de3-ceab-f0a9b3917e52" data-execution_count="15">
+<div id="vpFKwqDpSIus" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="23d65bd2-347f-4de3-ceab-f0a9b3917e52" data-execution_count="9">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json, uuid</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> timedelta, datetime, UTC</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1234,7 +1234,7 @@ Rows evaluated : 397,884</code></pre>
 <section id="step-6b-real-great-expectations-checkpoint" class="level2">
 <h2 class="anchored" data-anchor-id="step-6b-real-great-expectations-checkpoint">Step 6b — Real Great Expectations Checkpoint</h2>
 <p>The DAMA scan above is a hand-rolled implementation of the same six dimensions. Here we run the core checks again through a <strong>real Great Expectations 1.x checkpoint</strong> — the actual library the capstone rubric names — so you see both the concept and the real tool.</p>
-<div id="cell-18" class="cell" data-execution_count="18">
+<div id="952f12a5" class="cell" data-execution_count="10">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> great_expectations <span class="im">as</span> gx</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> great_expectations.expectations <span class="im">as</span> gxe</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1290,7 +1290,7 @@ Rows evaluated : 397,884</code></pre>
 <section id="step-7-route-production-warehouse-or-quarantine" class="level2">
 <h2 class="anchored" data-anchor-id="step-7-route-production-warehouse-or-quarantine">Step 7 — Route: Production Warehouse or Quarantine</h2>
 <p>Based on the quality verdict, we either promote the data or quarantine it. Regardless of the verdict, we always write the rejected rows to quarantine so producers can fix them.</p>
-<div id="BOV6P9mjSIut" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="92b50523-da8d-4c11-dd54-b7111a0d88d8" data-execution_count="16">
+<div id="BOV6P9mjSIut" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="92b50523-da8d-4c11-dd54-b7111a0d88d8" data-execution_count="11">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> datetime, UTC</span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1334,7 +1334,7 @@ Rows evaluated : 397,884</code></pre>
 <section id="step-8-openlineage-audit-trail" class="level2">
 <h2 class="anchored" data-anchor-id="step-8-openlineage-audit-trail">Step 8 — OpenLineage Audit Trail</h2>
 <p>Every pipeline run emits structured lineage events. In production these would be sent to a <strong>Marquez</strong> server via HTTP POST. Here we write them locally for inspection.</p>
-<div id="z8YzVFDwSIut" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="11ba472f-4067-488c-aef5-13860ce56de7" data-execution_count="14">
+<div id="z8YzVFDwSIut" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="11ba472f-4067-488c-aef5-13860ce56de7" data-execution_count="12">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json, uuid, os</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> datetime, UTC</span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1396,7 +1396,7 @@ Rows evaluated : 397,884</code></pre>
 <section id="step-8b-real-openlineage-emitter" class="level2">
 <h2 class="anchored" data-anchor-id="step-8b-real-openlineage-emitter">Step 8b — Real OpenLineage Emitter</h2>
 <p><code>LineageEmitter</code> above hand-builds JSON matching the OpenLineage event shape. Here we emit <strong>real openlineage-python</strong> START/COMPLETE (or FAIL) events to a local file transport — no Marquez server required — as the real-library counterpart.</p>
-<div id="cell-24" class="cell" data-execution_count="19">
+<div id="b82ee928" class="cell" data-execution_count="13">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> openlineage.client <span class="im">import</span> OpenLineageClient</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> openlineage.client.transport.<span class="bu">file</span> <span class="im">import</span> FileConfig, FileTransport</span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> openlineage.client.event_v2 <span class="im">import</span> RunEvent, RunState, Run, Job</span>
@@ -1435,7 +1435,7 @@ Rows evaluated : 397,884</code></pre>
 <section id="step-9-explore-the-clean-data" class="level2">
 <h2 class="anchored" data-anchor-id="step-9-explore-the-clean-data">Step 9 — Explore the Clean Data</h2>
 <p>Now let’s actually look at what passed the quality gates and draw some insights.</p>
-<div id="yvOXjh0dSIut" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="ef0c6164-e67c-4496-b032-c1a1fc0ff0ab" data-execution_count="17">
+<div id="yvOXjh0dSIut" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="ef0c6164-e67c-4496-b032-c1a1fc0ff0ab" data-execution_count="14">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> report[<span class="st">"passed"</span>] <span class="kw">and</span> os.path.exists(<span class="st">"production_warehouse/online_retail_clean.parquet"</span>):</span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    df_clean <span class="op">=</span> pd.read_parquet(<span class="st">"production_warehouse/online_retail_clean.parquet"</span>)</span>
 <span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
