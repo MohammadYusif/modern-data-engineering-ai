@@ -1006,6 +1006,9 @@ Requirement already satisfied: typing-inspection&gt;=0.4.2 in c:\users\fdasg\app
   Summary: 2 accepted, 1 rejected by the schema gate.</code></pre>
 </div>
 </div>
+<p><strong>A note on the offsets above.</strong> This cell’s saved output shows offsets <code>0</code>, <code>1</code>, <code>2</code> — that’s only true against a <em>freshly-started</em> broker: a fresh topic and a consumer group (<code>day2-schema-check</code>) that has never committed an offset before. Kafka persists both the topic’s message log and the consumer group’s committed offset on the broker itself, so re-running this exact cell against the <em>same still-running</em> broker climbs instead of resetting — <code>3, 4, 5</code> the second time, <code>6, 7, 8</code> the third, and so on. That’s expected Kafka behavior, not a bug in this lab.</p>
+<p>The aggregate <code>Summary: 2 accepted, 1 rejected by the schema gate.</code> line does stay stable across reruns, but only because <code>produce_sample_messages()</code> always writes one fresh 3-message batch immediately before each <code>consume_and_validate()</code> call — that’s an accident of this script’s structure, not proof the offsets are equally stable.</p>
+<p>When reproducing this locally, verify the <strong>pattern</strong> — three consecutive offsets where the first two are accepted and the third is rejected — not the specific starting number. To get the exact <code>0, 1, 2</code> output back, restart the Kafka broker (stop the process, or <code>docker rm</code> the container and start a fresh one per this notebook’s own setup cell above) before re-running this cell.</p>
 
 
 </section>
